@@ -40,8 +40,10 @@ namespace BetProject
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
 
             ResultadoSiteServices rs = new ResultadoSiteServices(seleniumConfigurations);
-            rs.AbrirPagina();
             rs.GuardaJogosDoDia();
+            // TelegramService ts = new TelegramService();
+            // ts.EnviaMensagem("", "");
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
