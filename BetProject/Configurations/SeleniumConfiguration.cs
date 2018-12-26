@@ -7,7 +7,7 @@ namespace BetProject.Configurations
     {
         public SeleniumConfiguration()
         {
-            DriverFirefoxPath = Path.Combine(Directory.GetCurrentDirectory());
+            DriverFirefoxPath = Path.Combine(Directory.GetCurrentDirectory(),"Driver");
         }
 
         public string DriverFirefoxPath { get; set; }

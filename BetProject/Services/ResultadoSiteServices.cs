@@ -143,7 +143,8 @@ namespace BetProject.Services
         }
 
         public async void GuardaJogosDoDia()
-        {try
+        {
+            try
             {
                 try
                 {
@@ -166,6 +167,7 @@ namespace BetProject.Services
             }
 
         }
+
         public async Task SalvaJogosDeAmanha()
         {
             var amanha = TrazerIdContainerAmanha();
@@ -507,13 +509,13 @@ namespace BetProject.Services
                 if (golsTotal == 0 && (minutos >= 15 && minutos <= 21 || minutos >= 60))
                 {
 
-                    if ((time1_overs05 + time2_overs05) > 8 && 
-                        (timesComPoucaDiferencaClassificacao || jogoComTimeComGolsIrregulares) && 
-                        mediaGols > 2.4 && 
-                        umDosTimesFazMaisGol && 
-                        time1_mediaGols > 2.1 && 
+                    if ((time1_overs05 + time2_overs05) > 8 &&
+                        (timesComPoucaDiferencaClassificacao || jogoComTimeComGolsIrregulares) &&
+                        mediaGols > 2.4 &&
+                        umDosTimesFazMaisGol &&
+                        time1_mediaGols > 2.1 &&
                         time2_mediaGols > 2.1 &&
-                        (time1_overs15 + time2_overs15)> 7)
+                        (time1_overs15 + time2_overs15) > 7)
                     {
                         if (!this.NotificacaoJaEnviada(jogo.IdJogoBet, "0.5", 1))
                         {
@@ -562,7 +564,7 @@ namespace BetProject.Services
                     }
                 }
 
-                if (golsTotal == 1 && 
+                if (golsTotal == 1 &&
                     minutos <= 7 &&
                     mediaGols > 2.4)
                 {
@@ -577,7 +579,7 @@ namespace BetProject.Services
                     }
                 }
 
-                if (golsTotal == 1 && 
+                if (golsTotal == 1 &&
                     minutos >= 62 &&
                     mediaGols > 2.4 &&
                     umDosTimesFazMaisGol &&
@@ -607,7 +609,7 @@ namespace BetProject.Services
 
                 if (golsTotal == 2 && minutos >= 62)
                 {
-                    if ((time1_overs25 + time2_overs25) >= 7 && 
+                    if ((time1_overs25 + time2_overs25) >= 7 &&
                         mediaGols >= 3.2 &&
                         time1_mediaGols > 2.3 &&
                         time2_mediaGols > 2.3)
@@ -633,8 +635,8 @@ namespace BetProject.Services
 
                     if (!this.NotificacaoJaEnviada(jogo.IdJogoBet, "2.5", 2))
                     {
-                        if (mediaGols > 3.2 && 
-                            jogoComTimeComGolsIrregulares && 
+                        if (mediaGols > 3.2 &&
+                            jogoComTimeComGolsIrregulares &&
                             umDosTimesFazMaisGol &&
                             time1_mediaGols > 2.4 &&
                             time2_mediaGols > 2.4)

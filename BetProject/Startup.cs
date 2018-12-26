@@ -42,12 +42,6 @@ namespace BetProject
 
             ResultadoSiteServices rs = new ResultadoSiteServices(seleniumConfigurations);
             rs.GuardaJogosDoDia();
-
-            Task.Factory.StartNew(() => rs.GuardaJogosDoDia());
-
-            // TelegramService ts = new TelegramService();
-            // ts.EnviaMensagem("", "");
-
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -59,7 +53,7 @@ namespace BetProject
             }
 
             app.UseMvc();
-            
+
         }
     }
 }
