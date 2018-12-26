@@ -33,7 +33,7 @@ namespace BetProject.Services
 
             _configuration = configuration;
             FirefoxOptions options = new FirefoxOptions();
-            //options.AddArgument("--headless");
+            options.AddArgument("--headless");
 
             _driver = new FirefoxDriver(_configuration.DriverFirefoxPath, options);
             _driverParalelo = new FirefoxDriver(_configuration.DriverFirefoxPath, options);
