@@ -33,7 +33,7 @@ namespace BetProject.Services
 
             _configuration = configuration;
             FirefoxOptions options = new FirefoxOptions();
-            options.AddArgument("--headless");
+            //options.AddArgument("--headless");
 
             _driver = new FirefoxDriver(_configuration.DriverFirefoxPath, options);
             _driverParalelo = new FirefoxDriver(_configuration.DriverFirefoxPath, options);
@@ -143,12 +143,45 @@ namespace BetProject.Services
         }
 
         public async void GuardaJogosDoDia()
+        {try
+            {
+                try
+                {
+                    Task.Factory.StartNew(async () => await StartAnaliseLive(true));
+                    await Task.Delay(400000);
+                    await StartAnaliseLive();
+                    return;
+                }
+                catch
+                {
+                    Task.Factory.StartNew(async () => await StartAnaliseLive(true));
+                    await Task.Delay(400000);
+                    await StartAnaliseLive();
+                    return;
+                }
+            }
+            catch
+            {
+                telegramService.EnviaMensagemParaOGrupo("Erro App");
+            }
+
+        }
+        public async Task SalvaJogosDeAmanha()
         {
- 
-            Task.Factory.StartNew(async () => await StartAnaliseLive(true));
-            await Task.Delay(400000);
-            await StartAnaliseLive();
-            return;
+            var amanha = TrazerIdContainerAmanha();
+            if (amanha == null) await SalvaJogosIds(true);
+            Task.Factory.StartNew(async () =>
+            {
+                foreach (var i in amanha.Ids.OrderByDescending(id => id.DataInicio.TimeOfDay))
+                {
+                    await CriarOuAtualizaInfosJogo(i.Id, true, true);
+                }
+            });
+
+            foreach (var i in amanha.Ids.OrderBy(id => id.DataInicio.TimeOfDay))
+            {
+                await CriarOuAtualizaInfosJogo(i.Id, false, true);
+            }
 
         }
 
@@ -215,7 +248,7 @@ namespace BetProject.Services
                     jogoId.ErrorMessage = e.Message;
                     using (var s = context.DocumentStore.OpenSession())
                     {
-                        idContainer = TrazerIdContainerHoje();
+                        idContainer = amanha ? TrazerIdContainerAmanha() : TrazerIdContainerHoje();
                         idContainer.IdsComErro.Add(jogoId);
                         s.Store(idContainer);
                         s.SaveChanges();
@@ -231,7 +264,7 @@ namespace BetProject.Services
                     jogoId.ErrorMessage = e.Message;
                     using (var s = context.DocumentStore.OpenSession())
                     {
-                        idContainer = TrazerIdContainerHoje();
+                        idContainer = amanha ? TrazerIdContainerAmanha() : TrazerIdContainerHoje();
                         idContainer.IdsComErro.Add(jogoId);
                         s.Store(idContainer);
                         s.SaveChanges();
@@ -276,7 +309,7 @@ namespace BetProject.Services
         {
             while (true)
             {
-
+                telegramService.EnviaMensagemParaOGrupo("Teste Run App");
                 await CarregaJogosDoDia();
                 var idContainer = TrazerIdContainerHoje();
 
@@ -433,7 +466,7 @@ namespace BetProject.Services
                                                           .SelectMany(a => a.Overs)
                                                           .ToList();
 
-            var time2_05_15_25_Overs = jogo.Time1.AcimaAbaixo.Where(a => a.Tipo == EClassificacaoTipo.Fora)
+            var time2_05_15_25_Overs = jogo.Time2.AcimaAbaixo.Where(a => a.Tipo == EClassificacaoTipo.Fora)
                                                         .SelectMany(a => a.Overs)
                                                         .ToList();
             // Time1
@@ -474,7 +507,13 @@ namespace BetProject.Services
                 if (golsTotal == 0 && (minutos >= 15 && minutos <= 21 || minutos >= 60))
                 {
 
-                    if ((time1_overs05 + time2_overs05) > 8 && (timesComPoucaDiferencaClassificacao || jogoComTimeComGolsIrregulares) && mediaGols > 2.4)
+                    if ((time1_overs05 + time2_overs05) > 8 && 
+                        (timesComPoucaDiferencaClassificacao || jogoComTimeComGolsIrregulares) && 
+                        mediaGols > 2.4 && 
+                        umDosTimesFazMaisGol && 
+                        time1_mediaGols > 2.1 && 
+                        time2_mediaGols > 2.1 &&
+                        (time1_overs15 + time2_overs15)> 7)
                     {
                         if (!this.NotificacaoJaEnviada(jogo.IdJogoBet, "0.5", 1))
                         {
@@ -494,7 +533,14 @@ namespace BetProject.Services
 
                     }
 
-                    if (minutos >= 60 && (time1_overs05 + time2_overs05) >= 8)
+                    if (minutos >= 60 &&
+                        (time1_overs05 + time2_overs05) > 8 &&
+                        (timesComPoucaDiferencaClassificacao || jogoComTimeComGolsIrregulares) &&
+                        mediaGols > 2.4 &&
+                        umDosTimesFazMaisGol &&
+                        time1_mediaGols > 2.1 &&
+                        time2_mediaGols > 2.1 &&
+                        (time1_overs15 + time2_overs15) > 7)
                     {
                         if (!this.NotificacaoJaEnviada(jogo.IdJogoBet, "0.5", 2))
                         {
@@ -516,7 +562,9 @@ namespace BetProject.Services
                     }
                 }
 
-                if (golsTotal == 1 && minutos <= 7 && mediaGols > 2.4)
+                if (golsTotal == 1 && 
+                    minutos <= 7 &&
+                    mediaGols > 2.4)
                 {
                     if (!this.NotificacaoJaEnviada(jogo.IdJogoBet, "1.5", 1))
                     {
@@ -529,7 +577,12 @@ namespace BetProject.Services
                     }
                 }
 
-                if (golsTotal == 1 && mediaGols > 1.9 && minutos >= 62)
+                if (golsTotal == 1 && 
+                    minutos >= 62 &&
+                    mediaGols > 2.4 &&
+                    umDosTimesFazMaisGol &&
+                    time1_mediaGols > 2.1 &&
+                    time2_mediaGols > 2.1)
                 {
                     if (!this.NotificacaoJaEnviada(jogo.IdJogoBet, "1.5", 2))
                     {
@@ -554,7 +607,10 @@ namespace BetProject.Services
 
                 if (golsTotal == 2 && minutos >= 62)
                 {
-                    if (time1_overs25 + time2_overs25 >= 7 && mediaGols > 2.5)
+                    if ((time1_overs25 + time2_overs25) >= 7 && 
+                        mediaGols >= 3.2 &&
+                        time1_mediaGols > 2.3 &&
+                        time2_mediaGols > 2.3)
                     {
                         if (!this.NotificacaoJaEnviada(jogo.IdJogoBet, "2.5", 1))
                         {
@@ -577,7 +633,11 @@ namespace BetProject.Services
 
                     if (!this.NotificacaoJaEnviada(jogo.IdJogoBet, "2.5", 2))
                     {
-                        if (mediaGols >= 2.9 && jogoComTimeComGolsIrregulares)
+                        if (mediaGols > 3.2 && 
+                            jogoComTimeComGolsIrregulares && 
+                            umDosTimesFazMaisGol &&
+                            time1_mediaGols > 2.4 &&
+                            time2_mediaGols > 2.4)
                             telegramService.EnviaMensagemParaOGrupo($"{jogo.Time1.Nome} - {jogo.Time2.Nome} \n" +
                                                                     $"{jogo.Liga} \n" +
                                                                     $"Média Gols: {time1_mediaGols} / {time2_mediaGols} \n" +
@@ -887,12 +947,23 @@ namespace BetProject.Services
             return times;
         }
 
-        public void CriaOuAtualizaJogo(Jogo jogo)
+        public async void CriaOuAtualizaJogo(Jogo jogo)
         {
+
             using (var s = context.DocumentStore.OpenSession())
             {
-                s.Store(jogo);
-                s.SaveChanges();
+                try
+                {
+                    s.Store(jogo);
+                    s.SaveChanges();
+                }
+                catch
+                {
+                    await Task.Delay(2000);
+                    s.Store(jogo);
+                    s.SaveChanges();
+                }
+
             }
         }
 
@@ -1073,7 +1144,7 @@ namespace BetProject.Services
                                                           .SelectMany(a => a.Overs)
                                                           .ToList();
 
-            var time2_05_15_25_Overs = jogo.Time1.AcimaAbaixo.Where(a => a.Tipo == EClassificacaoTipo.Fora)
+            var time2_05_15_25_Overs = jogo.Time2.AcimaAbaixo.Where(a => a.Tipo == EClassificacaoTipo.Fora)
                                                         .SelectMany(a => a.Overs)
                                                         .ToList();
             // Time1
@@ -1122,7 +1193,6 @@ namespace BetProject.Services
                                                                     $"Classif. Perto : {timesComPoucaDiferencaClassificacao} \n Gols Irregulares: {jogoComTimeComGolsIrregulares} \n" +
                                                                     $"Os dois times fazem poucos gols: { osDoisTimesFazemPoucosGols } \n" +
                                                                     $"Um ou os dois Times Fazem Mais Gols: { umDosTimesFazMaisGols } \n" +
-                                                                    $"Over: 0.5 \n" +
                                                                     $"Boa Aposta", true);
         }
 
@@ -1133,7 +1203,7 @@ namespace BetProject.Services
                                                           .SelectMany(a => a.Overs)
                                                           .ToList();
 
-            var time2_05_15_25_Overs = jogo.Time1.AcimaAbaixo.Where(a => a.Tipo == EClassificacaoTipo.Fora)
+            var time2_05_15_25_Overs = jogo.Time2.AcimaAbaixo.Where(a => a.Tipo == EClassificacaoTipo.Fora)
                                                         .SelectMany(a => a.Overs)
                                                         .ToList();
             // Time1

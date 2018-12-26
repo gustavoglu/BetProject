@@ -39,8 +39,12 @@ namespace BetProject
 
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
 
+
             ResultadoSiteServices rs = new ResultadoSiteServices(seleniumConfigurations);
             rs.GuardaJogosDoDia();
+
+            Task.Factory.StartNew(() => rs.GuardaJogosDoDia());
+
             // TelegramService ts = new TelegramService();
             // ts.EnviaMensagem("", "");
 
