@@ -18,4 +18,10 @@
     <PackageReference Include="Telegram.Bot" Version="14.10.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="geckodriver.exe">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
