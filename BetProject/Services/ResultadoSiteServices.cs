@@ -33,7 +33,7 @@ namespace BetProject.Services
 
             _configuration = configuration;
             FirefoxOptions options = new FirefoxOptions();
-            options.AddArgument("--headless");
+            //options.AddArgument("--headless");
 
             _driver = new FirefoxDriver(_configuration.DriverFirefoxPath, options);
             _driverParalelo = new FirefoxDriver(_configuration.DriverFirefoxPath, options);
@@ -53,6 +53,11 @@ namespace BetProject.Services
         public string GetLinkDbId(string id)
         {
             return "http://ec2-52-15-109-86.us-east-2.compute.amazonaws.com:8083/databases/bp_db/docs?id=" + id;
+        }
+
+        public string GetLinkResultadosId(string id)
+        {
+            return _configuration.Sites.Resultado.ResumoJogo.Replace("ID", id);
         }
 
         public int GolsSofridosConvert(string gols)
@@ -282,7 +287,7 @@ namespace BetProject.Services
             }
 
             var idContainer = TrazerIdContainerHoje();
-            if (DateTime.Now > new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 05, 00, 00))
+            if (DateTime.Now >= new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 00, 00, 00))
             {
                 if (idContainer == null || !idContainer.Ids.Any())
                 {
@@ -311,7 +316,6 @@ namespace BetProject.Services
         {
             while (true)
             {
-                telegramService.EnviaMensagemParaOGrupo("Teste Run App");
                 await CarregaJogosDoDia();
                 var idContainer = TrazerIdContainerHoje();
 
@@ -502,161 +506,166 @@ namespace BetProject.Services
             bool umDosTimesFazMaisGol = UmDosTimesFazMaisGol(jogo);
             bool osDoisTimesFazemPoucosGols = OsDoisTimesFazemPoucosGols(jogo);
 
+            var somaOvers05 = time1_overs05 + time2_overs05;
+            var somaOvers15 = time1_overs15 + time2_overs15;
+            var somaOvers25 = time1_overs25 + time2_overs25;
+
+            var ligas05 = jogo.Liga.Contains("Holanda") ||
+                          jogo.Liga.Contains("Alemanha") ||
+                          jogo.Liga.Contains("Inglaterra");
 
             if (minutos > 5 && minutos < 80)
             {
 
-                if (golsTotal == 0 && (minutos >= 15 && minutos <= 21 || minutos >= 60))
-                {
-
-                    if ((time1_overs05 + time2_overs05) > 8 &&
-                        (timesComPoucaDiferencaClassificacao || jogoComTimeComGolsIrregulares) &&
-                        mediaGols > 2.4 &&
-                        umDosTimesFazMaisGol &&
-                        time1_mediaGols > 2.1 &&
-                        time2_mediaGols > 2.1 &&
-                        (time1_overs15 + time2_overs15) > 7)
-                    {
-                        if (!this.NotificacaoJaEnviada(jogo.IdJogoBet, "0.5", 1))
-                        {
-                            telegramService.EnviaMensagemParaOGrupo($"{jogo.Time1.Nome} - {jogo.Time2.Nome}\n" +
-                                                                    $"{jogo.Liga} \n" +
-                                                                    $"Média Gols: {time1_mediaGols} / {time2_mediaGols} \n Média Gols Total: {mediaGols}\n" +
-                                                                    $"Gols: {m1} / {m2}\n" +
-                                                                    $"Overs: {time1_overs05} / {time2_overs05} \n" +
-                                                                    $"Class: {classTime1} / {classTime2} de {classTotal} \n" +
-                                                                    $"Classif. Perto : {timesComPoucaDiferencaClassificacao} \n Gols Irregulares: {jogoComTimeComGolsIrregulares} \n" +
-                                                                    $"Os dois times fazem poucos gols: { osDoisTimesFazemPoucosGols } \n" +
-                                                                    $"Um ou os dois Times Fazem Mais Gols: { umDosTimesFazMaisGol } \n" +
-                                                                    $"Over: 0.5 \n" +
-                                                                    $"Boa Aposta");
-                            SalvaEnvioDeNotificao(jogo.IdJogoBet, "0.5", 1);
-                        }
-
-                    }
-
-                    if (minutos >= 60 &&
-                        (time1_overs05 + time2_overs05) > 8 &&
-                        (timesComPoucaDiferencaClassificacao || jogoComTimeComGolsIrregulares) &&
-                        mediaGols > 2.4 &&
-                        umDosTimesFazMaisGol &&
-                        time1_mediaGols > 2.1 &&
-                        time2_mediaGols > 2.1 &&
-                        (time1_overs15 + time2_overs15) > 7)
-                    {
-                        if (!this.NotificacaoJaEnviada(jogo.IdJogoBet, "0.5", 2))
-                        {
-                            telegramService.EnviaMensagemParaOGrupo($"{jogo.Time1.Nome} - {jogo.Time2.Nome} \n" +
-                                                                    $"{jogo.Liga} \n" +
-                                                                    $"Média Gols: {time1_mediaGols} / {time2_mediaGols} \n" +
-                                                                    $"Média Gols Total: {mediaGols} \n " +
-                                                                    $"Gols: {m1} / {m2}  \n" +
-                                                                    $"Overs: {time1_overs05} / {time2_overs05} \n" +
-                                                                    $"Class: {classTime1} / {classTime2} de {classTotal} \n " +
-                                                                    $"Classif. Perto : {timesComPoucaDiferencaClassificacao} \n " +
-                                                                    $"Gols Irregulares: {jogoComTimeComGolsIrregulares} \n" +
-                                                                    $"Os dois times fazem poucos gols: { osDoisTimesFazemPoucosGols } \n" +
-                                                                    $"Um ou os dois Times Fazem Mais Gols: { umDosTimesFazMaisGol } \n" +
-                                                                    $"Over: 0.5 \n" +
-                                                                    $"Boa Aposta");
-                            SalvaEnvioDeNotificao(jogo.IdJogoBet, "0.5", 2);
-                        }
-                    }
-                }
-
-                if (golsTotal == 1 &&
-                    minutos <= 7 &&
-                    mediaGols > 2.4)
-                {
-                    if (!this.NotificacaoJaEnviada(jogo.IdJogoBet, "1.5", 1))
-                    {
-                        if (time1_overs15 + time2_overs15 >= 8 && umDosTimesFazMaisGol && jogoComTimeComGolsIrregulares && timesComPoucaDiferencaClassificacao)
-                            telegramService.EnviaMensagemParaOGrupo($" {jogo.Time1.Nome} - {jogo.Time2.Nome} \n {jogo.Liga} \n Média Gols: {time1_mediaGols} / {time2_mediaGols} \n Média Gols Total: {mediaGols} " +
-                                                                    $"\n Gols: {m1} / {m2} \n Overs: {time1_overs15} / {time2_overs15} \n Class: {classTime1} / {classTime2} de {classTotal} \n " +
-                                                                    $" Classif. Perto : {timesComPoucaDiferencaClassificacao} \n Gols Irregulares: {jogoComTimeComGolsIrregulares} \n" +
-                                                                    $"Um ou os dois Times Fazem Mais Gols: { umDosTimesFazMaisGol } \n Over: 1.5 \n Boa Aposta");
-                        SalvaEnvioDeNotificao(jogo.IdJogoBet, "1.5", 1);
-                    }
-                }
-
-                if (golsTotal == 1 &&
-                    minutos >= 62 &&
+                if ((minutos >= 15 && minutos <= 21) &&
+                    ligas05 &&
+                    golsTotal == 0 &&
+                    somaOvers05 > 8 &&
                     mediaGols > 2.4 &&
                     umDosTimesFazMaisGol &&
-                    time1_mediaGols > 2.1 &&
-                    time2_mediaGols > 2.1)
+                    time1_mediaGols > 1.9 &&
+                    time2_mediaGols > 1.9 &&
+                    somaOvers15 > 7)
                 {
-                    if (!this.NotificacaoJaEnviada(jogo.IdJogoBet, "1.5", 2))
+                    if (!this.NotificacaoJaEnviada(jogo.IdJogoBet, "0.5", 1))
                     {
-                        if (time1_overs15 + time2_overs15 >= 7)
-                            telegramService.EnviaMensagemParaOGrupo($"{jogo.Time1.Nome} - {jogo.Time2.Nome} \n" +
-                                                                    $"{jogo.Liga} \n" +
-                                                                    $"Média Gols: {time1_mediaGols} / {time2_mediaGols} \n" +
-                                                                    $"Média Gols Total: {mediaGols} \n " +
-                                                                    $"Gols: {m1} / {m2}  \n" +
-                                                                    $"Overs: {time1_overs15} / {time2_overs15} \n" +
-                                                                    $"Class: {classTime1} / {classTime2} de {classTotal} \n " +
-                                                                    $"Classif. Perto : {timesComPoucaDiferencaClassificacao} \n " +
-                                                                    $"Gols Irregulares: {jogoComTimeComGolsIrregulares} \n" +
-                                                                    $"Os dois times fazem poucos gols: { osDoisTimesFazemPoucosGols } \n" +
-                                                                    $"Um ou os dois Times Fazem Mais Gols: { umDosTimesFazMaisGol } \n" +
-                                                                    $"Over: 1.5 \n" +
-                                                                    $"Boa Aposta");
-                        SalvaEnvioDeNotificao(jogo.IdJogoBet, "1.5", 2);
+                        telegramService.EnviaMensagemParaOGrupo($"{jogo.Time1.Nome} - {jogo.Time2.Nome}\n" +
+                                                                $"{jogo.Liga} \n" +
+                                                                $"Média Gols: {time1_mediaGols} / {time2_mediaGols} \n Média Gols Total: {mediaGols}\n" +
+                                                                $"Gols: {m1} / {m2}\n" +
+                                                                $"Overs: {time1_overs05} / {time2_overs05} \n" +
+                                                                $"Class: {classTime1} / {classTime2} de {classTotal} \n" +
+                                                                $"Classif. Perto : {timesComPoucaDiferencaClassificacao} \n Gols Irregulares: {jogoComTimeComGolsIrregulares} \n" +
+                                                                $"Os dois times fazem poucos gols: { osDoisTimesFazemPoucosGols } \n" +
+                                                                $"Um ou os dois Times Fazem Mais Gols: { umDosTimesFazMaisGol } \n" +
+                                                                $"Over: 0.5 \n" +
+                                                                $"Boa Aposta\n" +
+                                                                GetLinkResultadosId(jogo.IdJogoBet));
+                        SalvaEnvioDeNotificao(jogo.IdJogoBet, "0.5", 1);
                     }
 
                 }
+            }
 
-                if (golsTotal == 2 && minutos >= 62)
+
+            if (golsTotal == 0 && minutos >= 60)
+            {
+
+                if (minutos >= 60 &&
+                     somaOvers05 > 8 &&
+                     mediaGols > 2.4 &&
+                     umDosTimesFazMaisGol &&
+                     time1_mediaGols > 1.9 &&
+                     time2_mediaGols > 1.9)
                 {
-                    if ((time1_overs25 + time2_overs25) >= 7 &&
-                        mediaGols >= 3.2 &&
-                        time1_mediaGols > 2.3 &&
-                        time2_mediaGols > 2.3)
+                    if (!this.NotificacaoJaEnviada(jogo.IdJogoBet, "0.5", 2))
                     {
-                        if (!this.NotificacaoJaEnviada(jogo.IdJogoBet, "2.5", 1))
-                        {
-                            telegramService.EnviaMensagemParaOGrupo($"{jogo.Time1.Nome} - {jogo.Time2.Nome} \n" +
-                                                                    $"{jogo.Liga} \n" +
-                                                                    $"Média Gols: {time1_mediaGols} / {time2_mediaGols} \n" +
-                                                                    $"Média Gols Total: {mediaGols} \n " +
-                                                                    $"Gols: {m1} / {m2}  \n" +
-                                                                    $"Overs: {time1_overs25} / {time2_overs25} \n" +
-                                                                    $"Class: {classTime1} / {classTime2} de {classTotal} \n " +
-                                                                    $"Classif. Perto : {timesComPoucaDiferencaClassificacao} \n " +
-                                                                    $"Gols Irregulares: {jogoComTimeComGolsIrregulares} \n" +
-                                                                    $"Os dois times fazem poucos gols: { osDoisTimesFazemPoucosGols } \n" +
-                                                                    $"Um ou os dois Times Fazem Mais Gols: { umDosTimesFazMaisGol } \n" +
-                                                                    $"Over: 2.5 \n" +
-                                                                    $"Boa Aposta");
-                            SalvaEnvioDeNotificao(jogo.IdJogoBet, "2.5", 1);
-                        }
-                    }
+                        telegramService.EnviaMensagemParaOGrupo($"{jogo.Time1.Nome} - {jogo.Time2.Nome} \n" +
+                                                                $"{jogo.Liga} \n" +
+                                                                $"Média Gols: {time1_mediaGols} / {time2_mediaGols} \n" +
+                                                                $"Média Gols Total: {mediaGols} \n " +
+                                                                $"Gols: {m1} / {m2}  \n" +
+                                                                $"Overs: {time1_overs05} / {time2_overs05} \n" +
+                                                                $"Class: {classTime1} / {classTime2} de {classTotal} \n " +
+                                                                $"Classif. Perto : {timesComPoucaDiferencaClassificacao} \n " +
+                                                                $"Gols Irregulares: {jogoComTimeComGolsIrregulares} \n" +
+                                                                $"Os dois times fazem poucos gols: { osDoisTimesFazemPoucosGols } \n" +
+                                                                $"Um ou os dois Times Fazem Mais Gols: { umDosTimesFazMaisGol } \n" +
+                                                                $"Over: 0.5 \n" +
+                                                                $"Boa Aposta\n" +
+                                                                GetLinkResultadosId(jogo.IdJogoBet));
 
-                    if (!this.NotificacaoJaEnviada(jogo.IdJogoBet, "2.5", 2))
-                    {
-                        if (mediaGols > 3.2 &&
-                            jogoComTimeComGolsIrregulares &&
-                            umDosTimesFazMaisGol &&
-                            time1_mediaGols > 2.4 &&
-                            time2_mediaGols > 2.4)
-                            telegramService.EnviaMensagemParaOGrupo($"{jogo.Time1.Nome} - {jogo.Time2.Nome} \n" +
-                                                                    $"{jogo.Liga} \n" +
-                                                                    $"Média Gols: {time1_mediaGols} / {time2_mediaGols} \n" +
-                                                                    $"Média Gols Total: {mediaGols} \n " +
-                                                                    $"Gols: {m1} / {m2}  \n" +
-                                                                    $"Overs: {time1_overs25} / {time2_overs25} \n" +
-                                                                    $"Class: {classTime1} / {classTime2} de {classTotal} \n " +
-                                                                    $"Classif. Perto : {timesComPoucaDiferencaClassificacao} \n " +
-                                                                    $"Gols Irregulares: {jogoComTimeComGolsIrregulares} \n" +
-                                                                    $"Os dois times fazem poucos gols: { osDoisTimesFazemPoucosGols } \n" +
-                                                                    $"Um ou os dois Times Fazem Mais Gols: { umDosTimesFazMaisGol } \n" +
-                                                                    $"Over: 2.5 \n" +
-                                                                    $"Boa Aposta");
-                        SalvaEnvioDeNotificao(jogo.IdJogoBet, "2.5", 2);
+                        SalvaEnvioDeNotificao(jogo.IdJogoBet, "0.5", 2);
                     }
                 }
+            }
 
+            if (golsTotal == 1 &&
+                minutos <= 7 &&
+                mediaGols > 2.4 &&
+                umDosTimesFazMaisGol &&
+                time1_mediaGols > 1.9 &&
+                time2_mediaGols > 1.9 &&
+                somaOvers15 > 7)
+            {
+                if (!this.NotificacaoJaEnviada(jogo.IdJogoBet, "1.5", 1))
+                {
+                    if (time1_overs15 + time2_overs15 >= 8 && umDosTimesFazMaisGol && jogoComTimeComGolsIrregulares && timesComPoucaDiferencaClassificacao)
+                        telegramService.EnviaMensagemParaOGrupo($"{jogo.Time1.Nome} - {jogo.Time2.Nome} \n" +
+                                                             $"{jogo.Liga} \n" +
+                                                             $"Média Gols: {time1_mediaGols} / {time2_mediaGols} \n" +
+                                                             $"Média Gols Total: {mediaGols} \n " +
+                                                             $"Gols: {m1} / {m2}  \n" +
+                                                             $"Overs: {time1_overs15} / {time2_overs15} \n" +
+                                                             $"Class: {classTime1} / {classTime2} de {classTotal} \n " +
+                                                             $"Classif. Perto : {timesComPoucaDiferencaClassificacao} \n " +
+                                                             $"Gols Irregulares: {jogoComTimeComGolsIrregulares} \n" +
+                                                             $"Os dois times fazem poucos gols: { osDoisTimesFazemPoucosGols } \n" +
+                                                             $"Um ou os dois Times Fazem Mais Gols: { umDosTimesFazMaisGol } \n" +
+                                                             $"Over: 1.5 \n" +
+                                                             $"Boa Aposta\n" +
+                                                         GetLinkResultadosId(jogo.IdJogoBet));
+                    SalvaEnvioDeNotificao(jogo.IdJogoBet, "1.5", 1);
+                }
+            }
+
+            if (golsTotal == 1 &&
+                minutos >= 62 &&
+                mediaGols > 2.4 &&
+                 umDosTimesFazMaisGol &&
+                time1_mediaGols > 1.9 &&
+                time2_mediaGols > 1.9 &&
+                somaOvers15 > 7)
+            {
+                if (!this.NotificacaoJaEnviada(jogo.IdJogoBet, "1.5", 2))
+                {
+                    if (time1_overs15 + time2_overs15 >= 7)
+                        telegramService.EnviaMensagemParaOGrupo($"{jogo.Time1.Nome} - {jogo.Time2.Nome} \n" +
+                                                                $"{jogo.Liga} \n" +
+                                                                $"Média Gols: {time1_mediaGols} / {time2_mediaGols} \n" +
+                                                                $"Média Gols Total: {mediaGols} \n " +
+                                                                $"Gols: {m1} / {m2}  \n" +
+                                                                $"Overs: {time1_overs15} / {time2_overs15} \n" +
+                                                                $"Class: {classTime1} / {classTime2} de {classTotal} \n " +
+                                                                $"Classif. Perto : {timesComPoucaDiferencaClassificacao} \n " +
+                                                                $"Gols Irregulares: {jogoComTimeComGolsIrregulares} \n" +
+                                                                $"Os dois times fazem poucos gols: { osDoisTimesFazemPoucosGols } \n" +
+                                                                $"Um ou os dois Times Fazem Mais Gols: { umDosTimesFazMaisGol } \n" +
+                                                                $"Over: 1.5 \n" +
+                                                                $"Boa Aposta\n" +
+                                                            GetLinkResultadosId(jogo.IdJogoBet));
+                    SalvaEnvioDeNotificao(jogo.IdJogoBet, "1.5", 2);
+                }
+
+            }
+
+            if (golsTotal == 2 && minutos >= 62)
+            {
+                if (somaOvers25 > 7 &&
+                    mediaGols > 3 &&
+                    umDosTimesFazMaisGol &&
+                    time1_mediaGols > 2.4 &&
+                    time2_mediaGols > 2.4)
+                {
+                    if (!this.NotificacaoJaEnviada(jogo.IdJogoBet, "2.5", 1))
+                    {
+                        telegramService.EnviaMensagemParaOGrupo($"{jogo.Time1.Nome} - {jogo.Time2.Nome} \n" +
+                                                                $"{jogo.Liga} \n" +
+                                                                $"Média Gols: {time1_mediaGols} / {time2_mediaGols} \n" +
+                                                                $"Média Gols Total: {mediaGols} \n " +
+                                                                $"Gols: {m1} / {m2}  \n" +
+                                                                $"Overs: {time1_overs25} / {time2_overs25} \n" +
+                                                                $"Class: {classTime1} / {classTime2} de {classTotal} \n " +
+                                                                $"Classif. Perto : {timesComPoucaDiferencaClassificacao} \n " +
+                                                                $"Gols Irregulares: {jogoComTimeComGolsIrregulares} \n" +
+                                                                $"Os dois times fazem poucos gols: { osDoisTimesFazemPoucosGols } \n" +
+                                                                $"Um ou os dois Times Fazem Mais Gols: { umDosTimesFazMaisGol } \n" +
+                                                                $"Over: 2.5 \n" +
+                                                                $"Boa Aposta\n" +
+                                                            GetLinkResultadosId(jogo.IdJogoBet));
+                        SalvaEnvioDeNotificao(jogo.IdJogoBet, "2.5", 1);
+                    }
+                }
             }
         }
 
@@ -1183,7 +1192,12 @@ namespace BetProject.Services
             var somaOvers15 = time1_overs15 + time2_overs15;
             var somaOvers25 = time1_overs25 + time2_overs25;
 
-            if (mediaGols < 3.5 || !umDosTimesFazMaisGols || !(jogoComTimeComGolsIrregulares || timesComPoucaDiferencaClassificacao) || somaOvers05 < 9 || somaOvers15 < 9 || somaOvers25 > 8) return;
+            if (mediaGols < 3.5 ||
+                !umDosTimesFazMaisGols ||
+                !(jogoComTimeComGolsIrregulares || timesComPoucaDiferencaClassificacao) ||
+                somaOvers05 < 9 ||
+                somaOvers15 < 9 ||
+                somaOvers25 < 9) return;
 
             telegramService.EnviaMensagemParaOGrupo($"OVER\n{jogo.Time1.Nome} - {jogo.Time2.Nome} \n" +
                                                                     $"{jogo.Liga} \n" +
@@ -1195,7 +1209,8 @@ namespace BetProject.Services
                                                                     $"Classif. Perto : {timesComPoucaDiferencaClassificacao} \n Gols Irregulares: {jogoComTimeComGolsIrregulares} \n" +
                                                                     $"Os dois times fazem poucos gols: { osDoisTimesFazemPoucosGols } \n" +
                                                                     $"Um ou os dois Times Fazem Mais Gols: { umDosTimesFazMaisGols } \n" +
-                                                                    $"Boa Aposta", true);
+                                                                    $"Boa Aposta\n" +
+                                                                    GetLinkResultadosId(jogo.IdJogoBet), true);
         }
 
         public void AnalisaMediaGolsMenorQueDois(Jogo jogo)
@@ -1238,10 +1253,15 @@ namespace BetProject.Services
             bool timesComPoucaDiferencaClassificacao = TimesPoucaDiferencaClassificacao(jogo);
             bool umDosTimesFazMaisGols = UmDosTimesFazMaisGol(jogo);
             bool osDoisTimesFazemPoucosGols = OsDoisTimesFazemPoucosGols(jogo);
+            var somaOvers25 = time1_overs25 + time2_overs25;
 
-            if (time1_mediaGols > 1.9 || time2_mediaGols > 1.9 || (time1_overs25 + time2_overs25 > 3)) return;
+            if (time1_mediaGols > 1.9 ||
+                time2_mediaGols > 1.9 ||
+                somaOvers25 > 3 ||
+                mediaGols > 1.9
+                ) return;
 
-            if (mediaGols < 2) telegramService.EnviaMensagemParaOGrupo($"UNDER\n{jogo.Time1.Nome} - {jogo.Time2.Nome} \n" +
+            telegramService.EnviaMensagemParaOGrupo($"UNDER\n{jogo.Time1.Nome} - {jogo.Time2.Nome} \n" +
                                                                     $"{jogo.Liga} \n" +
                                                                     $"{jogo.DataInicio}\n" +
                                                                     $"Média Gols: {time1_mediaGols} / {time2_mediaGols} \n Média Gols Total: {mediaGols} \n" +
@@ -1252,7 +1272,8 @@ namespace BetProject.Services
                                                                     $"Os dois times fazem poucos gols: { osDoisTimesFazemPoucosGols } \n" +
                                                                     $"Um ou os dois Times Fazem Mais Gols: { umDosTimesFazMaisGols } \n" +
                                                                     $"Over: 0.5 \n" +
-                                                                    $"Boa Aposta", true); ;
+                                                                    $"Boa Aposta\n" +
+                                                                    GetLinkResultadosId(jogo.IdJogoBet), true); ;
         }
 
         private async Task PegaInfosAcimaAbaixo(string idBet, List<Time> times, int totalGols, bool driverParalelo = false)
