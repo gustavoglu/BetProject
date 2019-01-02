@@ -29,6 +29,7 @@ namespace BetProject.Services
                 configuration.GetSection("SeleniumConfiguration"))
                     .Configure(seleniumConfigurations);
             _configuration = seleniumConfigurations;
+            _telegramService = new TelegramService();
 
         }
 
