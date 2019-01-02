@@ -39,7 +39,9 @@ namespace BetProject.Infra.Repositories
         {
             using (var s = context.DocumentStore.OpenSession())
             {
-                 var container = s.Query<IdContainer>().FirstOrDefault(ic => ic.Ids.Exists(i => i.Id == idBet));
+                var container = s.Query<IdContainer>().ToList()
+                                .FirstOrDefault(ic => ic.Ids.Exists(i => i.Id == idBet));
+
                 if (container == null) return;
                 var idJogo = container.Ids.FirstOrDefault(i => i.Id == idBet);
                 if (idJogo == null) return;

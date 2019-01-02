@@ -46,16 +46,32 @@ namespace BetProject.Services
         {
             return _configuration.Sites.Resultado.ResumoJogo.Replace("ID", id);
         }
+
+        public string PegaStatus()
+        {
+
+            try
+            {
+                return _driver.FindElement(By.ClassName("mstat")).FindElements(By.TagName("span")).Count > 0 ?
+                             _driver.FindElement(By.ClassName("mstat")).FindElements(By.TagName("span"))[0]?.Text :
+                             "";
+            }
+            catch {
+
+                return "Sem status";
+            }
+
+
+        }
+
         public async Task AtualizaInformacoesBasicasJogo(Jogo jogo)
         {   
-
             _driver.Navigate().GoToUrl(_configuration.Sites.Resultado.ResumoJogo.Replace("ID", jogo.IdJogoBet));
             await Task.Delay(2000);
-            var status = _driver.FindElement(By.ClassName("mstat")).FindElements(By.TagName("span")).Count > 0 ?
-                                   _driver.FindElement(By.ClassName("mstat")).FindElements(By.TagName("span"))[0]?.Text :
-                                   "";
 
-            if (status == "Intervalo" || status == "Encerrado") return;
+            var status = PegaStatus();
+
+            if (status == "Intervalo" || status == "Encerrado" || status == "Sem status") return;
             string minutos = null;
 
             int score1 = 0;
@@ -118,9 +134,13 @@ namespace BetProject.Services
 
         private bool JogoClassificacao()
         {
-            string idLi4 = _driver.FindElement(By.ClassName("li4")).GetAttribute("id");
+            try
+            {
+                string idLi4 = _driver.FindElement(By.ClassName("li4")).GetAttribute("id");
 
-            return idLi4.Contains("li-match-standings");
+                return idLi4.Contains("li-match-standings");
+            }
+            catch { return false; }
         }
 
         private async Task<Jogo> CriaJogo(string idBet, List<Time> times)

@@ -14,6 +14,7 @@ namespace BetProject.Services
 {
     public class PrincipalService
     {
+        public List<IWebDriver> WebDriverCollectiont { get; set; }
         private readonly SeleniumConfiguration _configuration;
         private readonly TelegramService _telegramService;
         public PrincipalService()
@@ -83,14 +84,14 @@ namespace BetProject.Services
 
         public async Task Iniciar(int qtdWebDrivers = 1, bool headless = false)
         {
-            var webDriverList = WebDriverList(qtdWebDrivers, headless);
+            WebDriverCollectiont = WebDriverList(qtdWebDrivers, headless);
             try
             {
-                for (int i = 0; i < webDriverList.Count; i++)
+                for (int i = 0; i < WebDriverCollectiont.Count; i++)
                 {
-                    var wd = webDriverList[i];
+                    var wd = WebDriverCollectiont[i];
                     var rs = new ResultadoSiteService(wd);
-                    if (i + 1 == webDriverList.Count)
+                    if (i + 1 == WebDriverCollectiont.Count)
                     {
                         await rs.StartAnaliseLive(i % 2 == 0);
                     }
@@ -104,8 +105,14 @@ namespace BetProject.Services
             catch (Exception e)
             {
                 _telegramService.EnviaMensagemParaOGrupo(e.Message);
-                webDriverList.ForEach(wd => wd.Dispose());
+                WebDriverCollectiont.ForEach(wd => wd.Dispose());
             }
+        }
+
+
+        public void Dispose()
+        {
+            WebDriverCollectiont.ForEach(wd => wd.Dispose());
         }
     }
 }

@@ -342,13 +342,20 @@ namespace BetProject.Services
                 await Task.Delay(400000);
             }
 
-            FirefoxOptions options = new FirefoxOptions();
+            var idContainer = _idContainerRepository.TrazerIdContainerHoje();
+            if (!(DateTime.Now >= new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 19, 00, 00)) ||
+                !((idContainer == null || !idContainer.Ids.Any()) && DateTime.Now >= new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 00, 00, 00))) return;
+
+
+                FirefoxOptions options = new FirefoxOptions();
             IWebDriver wd1 = new FirefoxDriver(_configuration.DriverFirefoxPath, options);
             wd1.Manage().Timeouts().PageLoad = new TimeSpan(10, 0, 0);
             ResultadoSiteService rs1 = new ResultadoSiteService(wd1);
+            if (headless) options.AddArgument("--headless");
 
             if (DateTime.Now >= new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 19, 00, 00))
             {
+              
                 Task.Factory.StartNew(async () =>
                 {
                     await SalvaJogosDeAmanha();
@@ -358,12 +365,9 @@ namespace BetProject.Services
                 ResultadosSiteHelper.CarregandoJogos = false;
             }
 
-            var idContainer = _idContainerRepository.TrazerIdContainerHoje();
+           
             if (DateTime.Now >= new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 00, 00, 00))
             {
-
-                if (headless) options.AddArgument("--headless");
-
 
                 if (idContainer == null || !idContainer.Ids.Any())
                 {
