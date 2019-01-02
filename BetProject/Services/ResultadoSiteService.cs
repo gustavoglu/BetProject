@@ -24,6 +24,7 @@ namespace BetProject.Services
         private readonly JogoRepository _jogoRepository;
         private readonly JogoService _jogoService;
         private readonly AnaliseService _analiseService;
+  
         public bool CarregandoJogos { get; set; } = false;
         public IWebDriver Driver { get { return _driver; } }
 
@@ -451,6 +452,8 @@ namespace BetProject.Services
                     catch (Exception e)
                     {
                         var msg = e.Message;
+                        Console.WriteLine("Erro: " + e.Message + " IdBet: " + i.Id);
+                        
                     }
                 }
             }
