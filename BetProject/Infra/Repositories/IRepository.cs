@@ -5,7 +5,8 @@ using System.Threading.Tasks;
 
 namespace BetProject.Infra.Repositories
 {
-    public interface IRepository
+    public interface IRepository<T>
     {
+        void CriarOuAtualizar(T obj);
     }
 }

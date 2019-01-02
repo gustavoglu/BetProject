@@ -136,7 +136,6 @@ namespace BetProject.Services
             int diferenca = classMaior - classMenor;
             double diferencaAceitavel = lugaresTotal * DIFERENCACLASSIFICACAOACEITAVEL;
             return diferenca < diferencaAceitavel;
-
         }
 
         public List<Jogo> TrazJogos()
@@ -147,8 +146,44 @@ namespace BetProject.Services
             }
         }
 
+        public List<Jogo> TrazJogosPorIds(string[] ids)
+        {
+            using (var s = context.DocumentStore.OpenSession())
+            {
+                return s.Query<Jogo>().Where(j => j.IdJogoBet.In(ids)).ToList();
+            }
+        }
+
+        public List<IdJogo> ListaDeJogos(bool amanha = false)
+        {
+            var container = amanha ? TrazerIdContainerAmanha() : TrazerIdContainerHoje();
+            var jogos = TrazJogosPorIds(container.Ids.Select(ji => ji.Id).ToArray());
+            var top4IdsMedia = jogos.OrderByDescending(j => j.MediaGolsTotal).Take(4).ToList();
+            var jogosConfirmados = jogos.Where(j => j.UmTimeFazMaisGolEOutroSofreMaisGol || top4IdsMedia.Exists(i => i.Id == j.Id)).ToList();
+            var idsJogos = container.Ids.Where(i => jogosConfirmados.Exists(j => j.IdJogoBet == i.Id)).Distinct().ToList();
+            return idsJogos;
+
+        }
+
         public async void GuardaJogosDoDia()
         {
+            //await SalvaJogosDeAmanha();
+            var hoje = TrazerIdContainerAmanha();
+
+            //if (hoje == null) hoje = await SalvaJogosIds(true);
+            Task.Factory.StartNew(async () =>
+            {
+                foreach (var i in hoje.Ids.OrderByDescending(id => id.DataInicio.TimeOfDay))
+                {
+                    await CriarOuAtualizaInfosJogo(i.Id, true, false);
+                }
+            });
+
+            foreach (var i in hoje.Ids.OrderBy(id => id.DataInicio.TimeOfDay))
+            {
+                await CriarOuAtualizaInfosJogo(i.Id, false, false);
+            }
+
             try
             {
                 try
@@ -176,7 +211,7 @@ namespace BetProject.Services
         public async Task SalvaJogosDeAmanha()
         {
             var amanha = TrazerIdContainerAmanha();
-            if (amanha == null) await SalvaJogosIds(true);
+            if (amanha == null) amanha = await SalvaJogosIds(true);
             Task.Factory.StartNew(async () =>
             {
                 foreach (var i in amanha.Ids.OrderByDescending(id => id.DataInicio.TimeOfDay))
@@ -248,6 +283,7 @@ namespace BetProject.Services
 
                     if (jogo.Ignorar) return;
                     await AtualizaInformacoesBasicasJogo(jogo, driverParalelo);
+                    PreencheCamposAnaliseJogo(jogo);
                     CriaOuAtualizaJogo(jogo);
                 }
                 catch (Exception e)
@@ -256,6 +292,7 @@ namespace BetProject.Services
                     using (var s = context.DocumentStore.OpenSession())
                     {
                         idContainer = amanha ? TrazerIdContainerAmanha() : TrazerIdContainerHoje();
+                        if (idContainer == null) idContainer = TrazerIdContainerHoje();
                         idContainer.IdsComErro.Add(jogoId);
                         s.Store(idContainer);
                         s.SaveChanges();
@@ -272,6 +309,7 @@ namespace BetProject.Services
                     using (var s = context.DocumentStore.OpenSession())
                     {
                         idContainer = amanha ? TrazerIdContainerAmanha() : TrazerIdContainerHoje();
+                        if (idContainer == null) idContainer = TrazerIdContainerHoje();
                         idContainer.IdsComErro.Add(jogoId);
                         s.Store(idContainer);
                         s.SaveChanges();
@@ -358,13 +396,15 @@ namespace BetProject.Services
 
         bool UmDosTimesFazMaisGol(Jogo jogo)
         {
-            var time1TotalJogos = jogo.Time1.AcimaAbaixo.FirstOrDefault(aa => aa.Tipo == EClassificacaoTipo.Total).Overs[0].J;
-            var time2TotalJogos = jogo.Time2.AcimaAbaixo.FirstOrDefault(aa => aa.Tipo == EClassificacaoTipo.Total).Overs[0].J;
+            if (jogo.Time1.AcimaAbaixo.FirstOrDefault(aa => aa.Tipo == EClassificacaoTipo.Total) == null || jogo.Time2.AcimaAbaixo.FirstOrDefault(aa => aa.Tipo == EClassificacaoTipo.Total) == null) return false;
+
+            var time1TotalJogos = jogo.Time1.AcimaAbaixo.FirstOrDefault(aa => aa.Tipo == EClassificacaoTipo.Total)?.Overs[0]?.J;
+            var time2TotalJogos = jogo.Time2.AcimaAbaixo.FirstOrDefault(aa => aa.Tipo == EClassificacaoTipo.Total)?.Overs[0]?.J;
+
             var time1GolsR = GolsRealizadosConvert(jogo.Time1.AcimaAbaixo.FirstOrDefault(aa => aa.Tipo == EClassificacaoTipo.Total).Overs[0].Gols);
             var time2GolsR = GolsRealizadosConvert(jogo.Time2.AcimaAbaixo.FirstOrDefault(aa => aa.Tipo == EClassificacaoTipo.Total).Overs[0].Gols);
             bool time1FazMaisGolsQueSofre = time1GolsR >= time1TotalJogos;
             bool time2FazMaisGolsQueSofre = time2GolsR >= time2TotalJogos;
-
 
             return time1FazMaisGolsQueSofre || time2FazMaisGolsQueSofre;
         }
@@ -379,6 +419,8 @@ namespace BetProject.Services
             var time_05_15_25_OversTotal = time.AcimaAbaixo
                     .Where(a => a.Tipo == EClassificacaoTipo.Total)
                     .SelectMany(a => a.Overs).ToList();
+
+            if (!time_05_15_25_OversTotal.Any()) return time_05_15_25_Overs.FirstOrDefault().TotalUltimosJogos < 4;
 
             var time1qtdJogosTotal = time.AcimaAbaixo.FirstOrDefault(aa => aa.Tipo == EClassificacaoTipo.Total).Overs[0].TotalUltimosJogos;
             var time1qtdJogos = time_05_15_25_Overs.FirstOrDefault().TotalUltimosJogos < 4 ? time1qtdJogosTotal :
@@ -426,12 +468,20 @@ namespace BetProject.Services
                                             .Where(a => a.Tipo == EClassificacaoTipo.Total)
                                             .SelectMany(a => a.Overs).ToList();
 
-            var time_mediaGols = double.Parse(time_05_15_25_Overs[0].GJ.Replace(".", ","));
+            var time_mediaGols = double.Parse(time_05_15_25_Overs[0]?.GJ?.Replace(".", ","));
+            time.QtdJogos = time_05_15_25_Overs[0].J;
+
+            if (time_05_15_25_OversTotal.Count == 0) return time_mediaGols;
+
             var time_mediaGolsTotal = double.Parse(time.AcimaAbaixo.FirstOrDefault(aa => aa.Tipo == EClassificacaoTipo.Total)
-                                                                                                .Overs[0].GJ.Replace(".", ","));
+                                                                                                ?.Overs[0]?.GJ?.Replace(".", ","));
+
+            time.UsouOversTotal = time_05_15_25_Overs[0].TotalUltimosJogos < 4 && time_05_15_25_OversTotal[0]?.TotalUltimosJogos > 4;
+
+            if (time.UsouOversTotal) time.QtdJogos = time_05_15_25_OversTotal[0].J;
 
             return time_05_15_25_Overs[0].TotalUltimosJogos < 4 &&
-                         time_05_15_25_OversTotal[0].TotalUltimosJogos > 4 ?
+                         time_05_15_25_OversTotal[0]?.TotalUltimosJogos > 4 ?
                          time_mediaGolsTotal : time_mediaGols;
         }
 
@@ -450,11 +500,127 @@ namespace BetProject.Services
             int time_overs = time_05_15_25_Overs.FirstOrDefault(o => o.Valor == valor)?.Overs ?? 0;
             int time_oversTotal = time_05_15_25_OversTotal.FirstOrDefault(o => o.Valor == valor)?.Overs ?? 0;
 
+            if (time_oversTotal == 0) return time_overs;
+
+            time.UsouOversTotal = time_05_15_25_Overs[0].TotalUltimosJogos < 4 && time_05_15_25_OversTotal[0]?.TotalUltimosJogos > 4;
+
             time_overs = time_05_15_25_Overs[0].TotalUltimosJogos < 4 &&
-                         time_05_15_25_OversTotal[0].TotalUltimosJogos > 4 ?
+                         time_05_15_25_OversTotal[0]?.TotalUltimosJogos > 4 ?
                          time_oversTotal : time_overs;
 
             return time_overs;
+
+        }
+
+        bool UmTimeFazMaisGolQueOOutro(Jogo jogo)
+
+        {
+
+            return jogo.Time1.GolsRealizados > jogo.Time2.GolsRealizados ?
+                jogo.Time1.GolsRealizados > jogo.Time2.GolsRealizados :
+                jogo.Time1.GolsRealizados < jogo.Time2.GolsRealizados;
+
+        }
+
+        bool UmTimeFazMaisGolEOutroSofreMaisGols(Jogo jogo)
+        {
+            var qtdAceitavelTime1 = jogo.Time1.QtdJogos + (jogo.Time1.QtdJogos * 0.4);
+            var qtdAceitavelTime2 = jogo.Time2.QtdJogos + (jogo.Time2.QtdJogos * 0.4);
+
+            bool time1FazMaisGols = jogo.Time1.GolsRealizados > jogo.Time1.QtdJogos ? jogo.Time1.GolsRealizados > qtdAceitavelTime1 : false;
+            bool time2FazMaisGols = jogo.Time2.GolsRealizados > jogo.Time2.QtdJogos ? jogo.Time2.GolsRealizados > qtdAceitavelTime2 : false;
+            bool time1SofreMaisGols = jogo.Time1.GolsSofridos > jogo.Time1.QtdJogos ? jogo.Time1.GolsSofridos > qtdAceitavelTime1 : false;
+            bool time2SofreMaisGols = jogo.Time2.GolsSofridos > jogo.Time2.QtdJogos ? jogo.Time2.GolsSofridos > qtdAceitavelTime2 : false;
+
+            if (!time1FazMaisGols && !time2FazMaisGols) return false;
+
+            return time1FazMaisGols && time2SofreMaisGols || time2FazMaisGols && time1SofreMaisGols;
+        }
+
+        public void PreencheCamposAnaliseJogo(Jogo jogo)
+        {
+            var time1_05_15_25_Overs = jogo.Time1.AcimaAbaixo.Where(a => a.Tipo == EClassificacaoTipo.Casa)
+                                                        .SelectMany(a => a.Overs)
+                                                        .ToList();
+
+            var time2_05_15_25_Overs = jogo.Time2.AcimaAbaixo.Where(a => a.Tipo == EClassificacaoTipo.Fora)
+                                                        .SelectMany(a => a.Overs)
+                                                        .ToList();
+            // Time1
+
+            var time1_overs05 = GetOvers(jogo.Time1, 0.5, EClassificacaoTipo.Casa);
+            var time1_overs15 = GetOvers(jogo.Time1, 1.5, EClassificacaoTipo.Casa);
+            var time1_overs25 = GetOvers(jogo.Time1, 2.5, EClassificacaoTipo.Casa);
+
+            // Time2
+
+            var time2_overs05 = GetOvers(jogo.Time2, 0.5, EClassificacaoTipo.Fora);
+            var time2_overs15 = GetOvers(jogo.Time2, 1.5, EClassificacaoTipo.Fora);
+            var time2_overs25 = GetOvers(jogo.Time2, 2.5, EClassificacaoTipo.Fora);
+
+            //MediaGols
+            double time1_mediaGols = MediaGols(jogo.Time1, EClassificacaoTipo.Casa);
+            double time2_mediaGols = MediaGols(jogo.Time2, EClassificacaoTipo.Fora);
+            double mediaGols = (time1_mediaGols + time2_mediaGols) / 2;
+
+            var m1 = time1_05_15_25_Overs.FirstOrDefault()?.Gols ?? "";
+            var m2 = time2_05_15_25_Overs.FirstOrDefault()?.Gols ?? "";
+            var classTime1 = jogo.Time1.Classificacoes.FirstOrDefault().Lugar;
+            var classTime2 = jogo.Time2.Classificacoes.FirstOrDefault().Lugar;
+            var classTotal = jogo.Time1.Classificacoes.FirstOrDefault().TotalLugares;
+            bool golsIrregularTime1 = TimeGolsIrregular(jogo.Time1.AcimaAbaixo.FirstOrDefault().Overs.FirstOrDefault().Gols);
+            bool golsIrregularTime2 = TimeGolsIrregular(jogo.Time2.AcimaAbaixo.FirstOrDefault().Overs.FirstOrDefault().Gols);
+            bool jogoComTimeComGolsIrregulares = golsIrregularTime1 || golsIrregularTime2;
+            bool timesComPoucaDiferencaClassificacao = TimesPoucaDiferencaClassificacao(jogo);
+            bool umDosTimesFazMaisGol = UmDosTimesFazMaisGol(jogo);
+            bool osDoisTimesFazemPoucosGols = OsDoisTimesFazemPoucosGols(jogo);
+            int time1GolsR = GolsRealizadosConvert(m1);
+            int time1GolsS = GolsSofridosConvert(m1);
+            int time2GolsR = GolsRealizadosConvert(m2);
+            int time2GolsS = GolsSofridosConvert(m2);
+            var somaOvers05 = time1_overs05 + time2_overs05;
+            var somaOvers15 = time1_overs15 + time2_overs15;
+            var somaOvers25 = time1_overs25 + time2_overs25;
+
+            jogo.Time1.MediaGols = time1_mediaGols;
+            jogo.Time2.MediaGols = time2_mediaGols;
+
+            jogo.Time1.Gols = m1;
+            jogo.Time2.Gols = m2;
+
+            jogo.MediaGolsTotal = mediaGols;
+
+            jogo.Time1.Overs05 = time1_overs05;
+            jogo.Time1.Overs15 = time1_overs15;
+            jogo.Time1.Overs25 = time1_overs25;
+            jogo.Time2.Overs05 = time2_overs05;
+            jogo.Time2.Overs15 = time2_overs15;
+            jogo.Time2.Overs25 = time2_overs25;
+
+            jogo.SomaOvers05 = time1_overs05 + time2_overs05;
+            jogo.SomaOvers15 = time1_overs15 + time2_overs15;
+            jogo.SomaOvers25 = time1_overs25 + time2_overs25;
+            jogo.SomaTotalOvers = jogo.SomaOvers05 + jogo.SomaOvers15 + jogo.SomaOvers25;
+
+            jogo.Time1.Classificacao = classTime1;
+            jogo.Time2.Classificacao = classTime2;
+            jogo.ClassificaoTotal = classTotal;
+
+            jogo.ClassifPerto = timesComPoucaDiferencaClassificacao;
+            jogo.UmOuOsDoisTimesFazemMaisGols = umDosTimesFazMaisGol;
+            jogo.OsDoisTimesSofremGols = osDoisTimesFazemPoucosGols;
+            jogo.GolsIrregulares = jogoComTimeComGolsIrregulares;
+            jogo.TimesComPoucosJogos = PoucosJogosTime(jogo.Time1, EClassificacaoTipo.Casa) ||
+                                        PoucosJogosTime(jogo.Time2, EClassificacaoTipo.Fora);
+
+            jogo.LinkResultados = GetLinkResultadosId(jogo.IdJogoBet);
+
+            jogo.Time1.GolsRealizados = time1GolsR;
+            jogo.Time1.GolsSofridos = time1GolsS;
+            jogo.Time2.GolsRealizados = time2GolsR;
+            jogo.Time2.GolsSofridos = time2GolsS;
+            jogo.GolsTotal = jogo.GolsTime1 + jogo.GolsTime2;
+            jogo.UmTimeFazMaisGolEOutroSofreMaisGol = UmTimeFazMaisGolEOutroSofreMaisGols(jogo);
 
         }
 
@@ -517,48 +683,14 @@ namespace BetProject.Services
             if (minutos > 5 && minutos < 80)
             {
 
-                if ((minutos >= 15 && minutos <= 21) &&
-                    ligas05 &&
-                    golsTotal == 0 &&
-                    somaOvers05 > 8 &&
-                    mediaGols > 2.4 &&
-                    umDosTimesFazMaisGol &&
-                    time1_mediaGols > 1.9 &&
-                    time2_mediaGols > 1.9 &&
-                    somaOvers15 > 7)
+                if (minutos >= 13 && minutos <= 22 &&
+                  somaOvers05 > 8 &&
+                  somaOvers15 >= 7 &&
+                  mediaGols >= 2 &&
+                  time1_mediaGols > 1.9 &&
+                  time2_mediaGols > 1.9)
                 {
                     if (!this.NotificacaoJaEnviada(jogo.IdJogoBet, "0.5", 1))
-                    {
-                        telegramService.EnviaMensagemParaOGrupo($"{jogo.Time1.Nome} - {jogo.Time2.Nome}\n" +
-                                                                $"{jogo.Liga} \n" +
-                                                                $"Média Gols: {time1_mediaGols} / {time2_mediaGols} \n Média Gols Total: {mediaGols}\n" +
-                                                                $"Gols: {m1} / {m2}\n" +
-                                                                $"Overs: {time1_overs05} / {time2_overs05} \n" +
-                                                                $"Class: {classTime1} / {classTime2} de {classTotal} \n" +
-                                                                $"Classif. Perto : {timesComPoucaDiferencaClassificacao} \n Gols Irregulares: {jogoComTimeComGolsIrregulares} \n" +
-                                                                $"Os dois times fazem poucos gols: { osDoisTimesFazemPoucosGols } \n" +
-                                                                $"Um ou os dois Times Fazem Mais Gols: { umDosTimesFazMaisGol } \n" +
-                                                                $"Over: 0.5 \n" +
-                                                                $"Boa Aposta\n" +
-                                                                GetLinkResultadosId(jogo.IdJogoBet));
-                        SalvaEnvioDeNotificao(jogo.IdJogoBet, "0.5", 1);
-                    }
-
-                }
-            }
-
-
-            if (golsTotal == 0 && minutos >= 60)
-            {
-
-                if (minutos >= 60 &&
-                     somaOvers05 > 8 &&
-                     mediaGols > 2.4 &&
-                     umDosTimesFazMaisGol &&
-                     time1_mediaGols > 1.9 &&
-                     time2_mediaGols > 1.9)
-                {
-                    if (!this.NotificacaoJaEnviada(jogo.IdJogoBet, "0.5", 2))
                     {
                         telegramService.EnviaMensagemParaOGrupo($"{jogo.Time1.Nome} - {jogo.Time2.Nome} \n" +
                                                                 $"{jogo.Liga} \n" +
@@ -575,47 +707,73 @@ namespace BetProject.Services
                                                                 $"Boa Aposta\n" +
                                                                 GetLinkResultadosId(jogo.IdJogoBet));
 
-                        SalvaEnvioDeNotificao(jogo.IdJogoBet, "0.5", 2);
+                        SalvaEnvioDeNotificao(jogo.IdJogoBet, "0.5", 1);
+                    }
+                }
+
+                if (golsTotal == 1 &&
+                        minutos <= 8 &&
+                        mediaGols >= 2 &&
+                        time1_mediaGols > 1.9 &&
+                        time2_mediaGols > 1.9 &&
+                        somaOvers15 >= 7)
+                {
+                    if (!this.NotificacaoJaEnviada(jogo.IdJogoBet, "1.5", 1))
+                    {
+                        if (time1_overs15 + time2_overs15 >= 8 && umDosTimesFazMaisGol && jogoComTimeComGolsIrregulares && timesComPoucaDiferencaClassificacao)
+                            telegramService.EnviaMensagemParaOGrupo($"{jogo.Time1.Nome} - {jogo.Time2.Nome} \n" +
+                                                                 $"{jogo.Liga} \n" +
+                                                                 $"Média Gols: {time1_mediaGols} / {time2_mediaGols} \n" +
+                                                                 $"Média Gols Total: {mediaGols} \n " +
+                                                                 $"Gols: {m1} / {m2}  \n" +
+                                                                 $"Overs: {time1_overs15} / {time2_overs15} \n" +
+                                                                 $"Class: {classTime1} / {classTime2} de {classTotal} \n " +
+                                                                 $"Classif. Perto : {timesComPoucaDiferencaClassificacao} \n " +
+                                                                 $"Gols Irregulares: {jogoComTimeComGolsIrregulares} \n" +
+                                                                 $"Os dois times fazem poucos gols: { osDoisTimesFazemPoucosGols } \n" +
+                                                                 $"Um ou os dois Times Fazem Mais Gols: { umDosTimesFazMaisGol } \n" +
+                                                                 $"Over: 1.5 \n" +
+                                                                 $"Boa Aposta\n" +
+                                                             GetLinkResultadosId(jogo.IdJogoBet));
+                        SalvaEnvioDeNotificao(jogo.IdJogoBet, "1.5", 1);
                     }
                 }
             }
 
-            if (golsTotal == 1 &&
-                minutos <= 7 &&
-                mediaGols > 2.4 &&
-                umDosTimesFazMaisGol &&
-                time1_mediaGols > 1.9 &&
-                time2_mediaGols > 1.9 &&
-                somaOvers15 > 7)
+            if (minutos >= 60 &&
+                 somaOvers05 > 8 &&
+                 somaOvers15 >= 7 &&
+                 mediaGols > 2.4 &&
+                 time1_mediaGols > 1.9 &&
+                 time2_mediaGols > 1.9)
             {
-                if (!this.NotificacaoJaEnviada(jogo.IdJogoBet, "1.5", 1))
+                if (!this.NotificacaoJaEnviada(jogo.IdJogoBet, "0.5", 2))
                 {
-                    if (time1_overs15 + time2_overs15 >= 8 && umDosTimesFazMaisGol && jogoComTimeComGolsIrregulares && timesComPoucaDiferencaClassificacao)
-                        telegramService.EnviaMensagemParaOGrupo($"{jogo.Time1.Nome} - {jogo.Time2.Nome} \n" +
-                                                             $"{jogo.Liga} \n" +
-                                                             $"Média Gols: {time1_mediaGols} / {time2_mediaGols} \n" +
-                                                             $"Média Gols Total: {mediaGols} \n " +
-                                                             $"Gols: {m1} / {m2}  \n" +
-                                                             $"Overs: {time1_overs15} / {time2_overs15} \n" +
-                                                             $"Class: {classTime1} / {classTime2} de {classTotal} \n " +
-                                                             $"Classif. Perto : {timesComPoucaDiferencaClassificacao} \n " +
-                                                             $"Gols Irregulares: {jogoComTimeComGolsIrregulares} \n" +
-                                                             $"Os dois times fazem poucos gols: { osDoisTimesFazemPoucosGols } \n" +
-                                                             $"Um ou os dois Times Fazem Mais Gols: { umDosTimesFazMaisGol } \n" +
-                                                             $"Over: 1.5 \n" +
-                                                             $"Boa Aposta\n" +
-                                                         GetLinkResultadosId(jogo.IdJogoBet));
-                    SalvaEnvioDeNotificao(jogo.IdJogoBet, "1.5", 1);
+                    telegramService.EnviaMensagemParaOGrupo($"{jogo.Time1.Nome} - {jogo.Time2.Nome} \n" +
+                                                            $"{jogo.Liga} \n" +
+                                                            $"Média Gols: {time1_mediaGols} / {time2_mediaGols} \n" +
+                                                            $"Média Gols Total: {mediaGols} \n " +
+                                                            $"Gols: {m1} / {m2}  \n" +
+                                                            $"Overs: {time1_overs05} / {time2_overs05} \n" +
+                                                            $"Class: {classTime1} / {classTime2} de {classTotal} \n " +
+                                                            $"Classif. Perto : {timesComPoucaDiferencaClassificacao} \n " +
+                                                            $"Gols Irregulares: {jogoComTimeComGolsIrregulares} \n" +
+                                                            $"Os dois times fazem poucos gols: { osDoisTimesFazemPoucosGols } \n" +
+                                                            $"Um ou os dois Times Fazem Mais Gols: { umDosTimesFazMaisGol } \n" +
+                                                            $"Over: 0.5 \n" +
+                                                            $"Boa Aposta\n" +
+                                                            GetLinkResultadosId(jogo.IdJogoBet));
+
+                    SalvaEnvioDeNotificao(jogo.IdJogoBet, "0.5", 2);
                 }
             }
 
-            if (golsTotal == 1 &&
-                minutos >= 62 &&
+            if (minutos >= 62 &&
+                golsTotal == 1 &&
                 mediaGols > 2.4 &&
-                 umDosTimesFazMaisGol &&
                 time1_mediaGols > 1.9 &&
                 time2_mediaGols > 1.9 &&
-                somaOvers15 > 7)
+                somaOvers15 >= 7)
             {
                 if (!this.NotificacaoJaEnviada(jogo.IdJogoBet, "1.5", 2))
                 {
@@ -636,14 +794,12 @@ namespace BetProject.Services
                                                             GetLinkResultadosId(jogo.IdJogoBet));
                     SalvaEnvioDeNotificao(jogo.IdJogoBet, "1.5", 2);
                 }
-
             }
 
             if (golsTotal == 2 && minutos >= 62)
             {
-                if (somaOvers25 > 7 &&
-                    mediaGols > 3 &&
-                    umDosTimesFazMaisGol &&
+                if (somaOvers25 >= 6 &&
+                    mediaGols >= 2.9 &&
                     time1_mediaGols > 2.4 &&
                     time2_mediaGols > 2.4)
                 {
@@ -664,6 +820,36 @@ namespace BetProject.Services
                                                                 $"Boa Aposta\n" +
                                                             GetLinkResultadosId(jogo.IdJogoBet));
                         SalvaEnvioDeNotificao(jogo.IdJogoBet, "2.5", 1);
+                    }
+                }
+            }
+
+            int diferencaGols = jogo.GolsTime1 > jogo.GolsTime2 ? jogo.GolsTime1 - jogo.GolsTime2 : jogo.GolsTime2 - jogo.GolsTime1;
+
+            if (minutos >= 60 &&  golsTotal > 2 &&  diferencaGols < 3)
+            {
+                if (somaOvers25 >= 6 &&
+                    mediaGols >= 2.9 &&
+                    time1_mediaGols > 2.4 &&
+                    time2_mediaGols > 2.4)
+                {
+                    if (!this.NotificacaoJaEnviada(jogo.IdJogoBet, "3.5", 1))
+                    {
+                        telegramService.EnviaMensagemParaOGrupo($"{jogo.Time1.Nome} - {jogo.Time2.Nome} \n" +
+                                                                $"{jogo.Liga} \n" +
+                                                                $"Média Gols: {time1_mediaGols} / {time2_mediaGols} \n" +
+                                                                $"Média Gols Total: {mediaGols} \n " +
+                                                                $"Gols: {m1} / {m2}  \n" +
+                                                                $"Overs: {time1_overs25} / {time2_overs25} \n" +
+                                                                $"Class: {classTime1} / {classTime2} de {classTotal} \n " +
+                                                                $"Classif. Perto : {timesComPoucaDiferencaClassificacao} \n " +
+                                                                $"Gols Irregulares: {jogoComTimeComGolsIrregulares} \n" +
+                                                                $"Os dois times fazem poucos gols: { osDoisTimesFazemPoucosGols } \n" +
+                                                                $"Um ou os dois Times Fazem Mais Gols: { umDosTimesFazMaisGol } \n" +
+                                                                $"Over: 3.5 \n" +
+                                                                $"Boa Aposta\n" +
+                                                            GetLinkResultadosId(jogo.IdJogoBet));
+                        SalvaEnvioDeNotificao(jogo.IdJogoBet, "3.5", 1);
                     }
                 }
             }
@@ -839,6 +1025,8 @@ namespace BetProject.Services
 
             RemoviTodasTabelasTabela(driver);
 
+            var jogosAceitos = ListaDeJogos();
+
             var trsJogos = driver.FindElements(By.ClassName("stage-live")).ToList();
             if (!trsJogos.Any()) return idContainerHoje;
 
@@ -847,15 +1035,19 @@ namespace BetProject.Services
             {
                 string id = tr.GetAttribute("id").Substring(4);
 
-                if (ApostaBet(tr, driver))
+                if (jogosAceitos.Exists(j => j.Id == id))
                 {
 
-                    string status = tr.FindElement(By.ClassName("cell_aa")).Text;
-                    if (status != "Encerrado" && status != "Adiado")
+                    if (ApostaBet(tr, driver))
                     {
-                        string horaInicio = tr.FindElement(By.ClassName("cell_ad")).Text;
-                        IdJogo idJogo = new IdJogo(id, DateTime.Parse(horaInicio));
-                        idContainerHoje.IdsLive.Add(idJogo);
+
+                        string status = tr.FindElement(By.ClassName("cell_aa")).Text;
+                        if (status != "Encerrado" && status != "Adiado")
+                        {
+                            string horaInicio = tr.FindElement(By.ClassName("cell_ad")).Text;
+                            IdJogo idJogo = new IdJogo(id, DateTime.Parse(horaInicio));
+                            idContainerHoje.IdsLive.Add(idJogo);
+                        }
                     }
                 }
             }
@@ -982,31 +1174,27 @@ namespace BetProject.Services
         {
             var time1_05_15_25_OversTotal = jogo.Time1.AcimaAbaixo
                        .Where(a => a.Tipo == EClassificacaoTipo.Total)
-                       .SelectMany(a => a.Overs)
-                       .Where(o => o.Overs > 0).ToList();
+                       .SelectMany(a => a.Overs).ToList();
 
             var time1_05_15_25_Overs = jogo.Time1.AcimaAbaixo
                         .Where(a => a.Tipo == EClassificacaoTipo.Casa)
-                        .SelectMany(a => a.Overs)
-                        .Where(o => o.Overs > 0).ToList();
+                        .SelectMany(a => a.Overs).ToList();
 
             var time2_05_15_25_OversTotal = jogo.Time2.AcimaAbaixo
                    .Where(a => a.Tipo == EClassificacaoTipo.Total)
-                   .SelectMany(a => a.Overs)
-                   .Where(o => o.Overs > 0).ToList();
+                   .SelectMany(a => a.Overs).ToList();
 
             var time2_05_15_25_Overs = jogo.Time2.AcimaAbaixo
                         .Where(a => a.Tipo == EClassificacaoTipo.Fora)
-                        .SelectMany(a => a.Overs)
-                        .Where(o => o.Overs > 0).ToList();
+                        .SelectMany(a => a.Overs).ToList();
 
             var time1_overs15 = time1_05_15_25_Overs.FirstOrDefault(o => o.Valor == 1.5)?.Gols;
             var time1_overs15Total = time1_05_15_25_OversTotal.FirstOrDefault(o => o.Valor == 1.5)?.Gols;
             var time2_overs15 = time2_05_15_25_Overs.FirstOrDefault(o => o.Valor == 1.5)?.Gols;
             var time2_overs15Total = time2_05_15_25_OversTotal.FirstOrDefault(o => o.Valor == 1.5)?.Gols;
 
-            time1_overs15 = time1_05_15_25_Overs[0].TotalUltimosJogos < 4 && time1_05_15_25_OversTotal != null ? time1_overs15Total : time1_overs15;
-            time2_overs15 = time2_05_15_25_Overs[0].TotalUltimosJogos < 4 && time2_05_15_25_OversTotal != null ? time2_overs15Total : time2_overs15;
+            time1_overs15 = time1_05_15_25_Overs[0]?.TotalUltimosJogos < 4 && time1_05_15_25_OversTotal != null ? time1_overs15Total : time1_overs15;
+            time2_overs15 = time2_05_15_25_Overs[0]?.TotalUltimosJogos < 4 && time2_05_15_25_OversTotal != null ? time2_overs15Total : time2_overs15;
 
             int time1GolsR = GolsRealizadosConvert(time1_overs15);
             int time1GolsS = GolsSofridosConvert(time1_overs15);
@@ -1037,11 +1225,9 @@ namespace BetProject.Services
 
             await PegaInfosAcimaAbaixo(idBet, times, jogo.GolsTime1 + jogo.GolsTime2, driverParalelo);
 
-
-
             AnalisaMediaGolsMenorQueDois(jogo);
             AnalisaSeMelhorJogo(jogo);
-
+            PreencheCamposAnaliseJogo(jogo);
 
             CriaOuAtualizaJogo(jogo);
 
@@ -1087,6 +1273,7 @@ namespace BetProject.Services
             jogo.Minutos = minutos;
             jogo.GolsTime1 = score1;
             jogo.GolsTime2 = score2;
+
 
         }
 
@@ -1373,6 +1560,7 @@ namespace BetProject.Services
 
                 if (time.Nome == nomeTime)
                 {
+                    var qtdJogos = tr.FindElement(By.ClassName("col_matches_played")).Text;
                     var gols = tr.FindElement(By.ClassName("col_goals")).Text;
                     var gj = tr.FindElement(By.ClassName("col_avg_goals_match")).Text;
                     var asTag = tr.FindElement(By.ClassName("col_last_5"))
@@ -1382,7 +1570,9 @@ namespace BetProject.Services
                     var unders = tr.FindElements(By.ClassName("form-under")).Count;
 
                     Over o = new Over(overValor, gols, gj, overs, unders, overs + unders, GolsRealizadosConvert(gols), GolsSofridosConvert(gols));
+                    o.J = int.Parse(qtdJogos);
                     var aa = new AcimaAbaixo(tipo);
+
                     aa.Overs.Add(o);
                     time.AcimaAbaixo.Add(aa);
                 }

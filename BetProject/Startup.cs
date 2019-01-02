@@ -36,12 +36,23 @@ namespace BetProject
             new ConfigureFromConfigurationOptions<SeleniumConfiguration>(
                 configuration.GetSection("SeleniumConfiguration"))
                     .Configure(seleniumConfigurations);
-
+            TelegramService ts = new TelegramService();
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
+            try
+            {
+                ts.EnviaMensagemParaOGrupo("App Iniciado");
+                PrincipalService ps = new PrincipalService();
+                //ps.SalvaJogosAmanha(2).GetAwaiter().GetResult();
+                ps.Iniciar(2).GetAwaiter().GetResult();
+            }
+            catch(Exception e)
+            {
+               
+                ts.EnviaMensagemParaOGrupo("Erro App : " + e.Message);
+            }
 
-
-            ResultadoSiteServices rs = new ResultadoSiteServices(seleniumConfigurations);
-            rs.GuardaJogosDoDia();
+            //ResultadoSiteServices rs = new ResultadoSiteServices(seleniumConfigurations);
+            //rs.GuardaJogosDoDia();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
