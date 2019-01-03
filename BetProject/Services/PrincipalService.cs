@@ -55,8 +55,8 @@ namespace BetProject.Services
         {
     
             FirefoxOptions options = new FirefoxOptions();
-            IWebDriver wd1 = new FirefoxDriver(_configuration.DriverFirefoxPath, options, TimeSpan.FromMinutes(10));
-            IWebDriver wd2 = new FirefoxDriver(_configuration.DriverFirefoxPath, options, TimeSpan.FromMinutes(10));
+            IWebDriver wd1 = new FirefoxDriver(_configuration.DriverFirefoxPath, options, TimeSpan.FromDays(1));
+            IWebDriver wd2 = new FirefoxDriver(_configuration.DriverFirefoxPath, options, TimeSpan.FromDays(1));
             wd1.Manage().Timeouts().PageLoad = new TimeSpan(10, 0, 0);
             wd2.Manage().Timeouts().PageLoad = new TimeSpan(10, 0, 0);
             try
