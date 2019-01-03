@@ -46,7 +46,6 @@ namespace BetProject.Services
         {
             return _configuration.Sites.Resultado.ResumoJogo.Replace("ID", id);
         }
-
         public string PegaStatus()
         {
 
@@ -420,7 +419,9 @@ namespace BetProject.Services
             jogo.Time2.GolsSofridos = time2GolsS;
             jogo.GolsTotal = jogo.GolsTime1 + jogo.GolsTime2;
             jogo.UmTimeFazMaisGolEOutroSofreMaisGol = JogoValidations.UmTimeFazMaisGolEOutroSofreMaisGols(jogo);
-
+            jogo.Time1.QtdTotalDeJogosOvers = TimeHelper.GetQtdJogos(jogo.Time1, EClassificacaoTipo.Casa);
+            jogo.Time2.QtdTotalDeJogosOvers = TimeHelper.GetQtdJogos(jogo.Time2, EClassificacaoTipo.Fora);
+            jogo.UmOuOsDoisTimesTemJogosOversMenorQue5 = (jogo.Time1.QtdTotalDeJogosOvers < 5 || jogo.Time2.QtdTotalDeJogosOvers < 5);
         }
     }
 }

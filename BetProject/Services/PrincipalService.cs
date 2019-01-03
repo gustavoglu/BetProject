@@ -1,5 +1,6 @@
 ﻿using BetProject.Configurations;
 using BetProject.Helpers;
+using BetProject.Infra.Repositories;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using OpenQA.Selenium;
@@ -52,7 +53,7 @@ namespace BetProject.Services
 
         public async Task SalvaJogosAmanha(int qtdWebDrivers = 1, bool headless = false)
         {
-
+    
             FirefoxOptions options = new FirefoxOptions();
             IWebDriver wd1 = new FirefoxDriver(_configuration.DriverFirefoxPath, options, TimeSpan.FromMinutes(10));
             IWebDriver wd2 = new FirefoxDriver(_configuration.DriverFirefoxPath, options, TimeSpan.FromMinutes(10));
@@ -69,6 +70,7 @@ namespace BetProject.Services
                         await rs2.SalvaJogosDeAmanha();
                     });
 
+                await Task.Delay(TimeSpan.FromMinutes(15));
                 await rs1.SalvaJogosDeAmanha(true);
                 ResultadosSiteHelper.CarregandoJogos = false;
                 wd1.Dispose();

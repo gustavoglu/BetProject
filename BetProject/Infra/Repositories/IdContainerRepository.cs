@@ -2,6 +2,7 @@
 using BetProject.ObjectValues;
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace BetProject.Infra.Repositories
 {
@@ -32,6 +33,7 @@ namespace BetProject.Infra.Repositories
         public bool NotificacaoJaEnviada(string idBet, string desc, int numero)
         {
             var idContainerHoje = TrazerIdContainerHoje();
+            Task.Delay(2000).GetAwaiter().GetResult();
             return idContainerHoje.Notificacoes.Exists(n => n.IdBet == idBet && n.Notificacao == desc && n.Numero == numero);
         }
 

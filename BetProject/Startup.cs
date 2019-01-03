@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using BetProject.Configurations;
+using BetProject.Infra.Repositories;
 using BetProject.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -42,7 +43,8 @@ namespace BetProject
             try
             {
                 ts.EnviaMensagemParaOGrupo("App Iniciado");
-              
+
+                
                 //ps.SalvaJogosAmanha(2).GetAwaiter().GetResult();
                 ps.Iniciar(2,true).GetAwaiter().GetResult();
             }

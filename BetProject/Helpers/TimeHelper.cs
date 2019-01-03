@@ -88,7 +88,7 @@ namespace BetProject.Helpers
 
             if (time_oversTotal == 0) return time_overs;
 
-            time.UsouOversTotal = TimeValidations.UsarTotal(time,valor,tipo);
+            time.UsouOversTotal = TimeValidations.UsarTotal(time, valor, tipo);
 
             time_overs = time.UsouOversTotal ? time_oversTotal : time_overs;
 
@@ -96,5 +96,15 @@ namespace BetProject.Helpers
 
         }
 
+        public static int GetQtdJogos(Time time, EClassificacaoTipo tipo)
+        {
+            int? qtdJogosTime = time.UsouOversTotal ?
+                                 time.AcimaAbaixo.FirstOrDefault(t => t.Tipo == EClassificacaoTipo.Total)?.Overs[0]?
+                                 .TotalUltimosJogos :
+
+                                 time.AcimaAbaixo.FirstOrDefault(t => t.Tipo == tipo)?.Overs[0]?.TotalUltimosJogos;
+
+            return qtdJogosTime.HasValue ? qtdJogosTime.Value : time.AcimaAbaixo.FirstOrDefault(t => t.Tipo == tipo).Overs[0].TotalUltimosJogos;
+        }
     }
 }

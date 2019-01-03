@@ -24,5 +24,6 @@ namespace BetProject.ObjectValues
         public int Overs25 { get; set; } = 0;
         public bool UsouOversTotal { get; set; } = false;
         public int QtdJogos { get; set; }
+        public int QtdTotalDeJogosOvers { get; set; }
     }
 }
