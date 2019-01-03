@@ -33,7 +33,7 @@ namespace BetProject.Services
 
         }
 
-   
+
 
         public List<IWebDriver> WebDriverList(int qtdWebDrivers = 1, bool headless = false)
         {
@@ -42,7 +42,7 @@ namespace BetProject.Services
             List<IWebDriver> webDrivers = new List<IWebDriver>();
             for (int i = 0; i < qtdWebDrivers; i++)
             {
-                var wd = new FirefoxDriver(_configuration.DriverFirefoxPath, options);
+                var wd = new FirefoxDriver(_configuration.DriverFirefoxPath, options, TimeSpan.FromMinutes(10));
                 wd.Manage().Timeouts().PageLoad = new TimeSpan(10, 0, 0);
                 webDrivers.Add(wd);
             }
@@ -52,10 +52,10 @@ namespace BetProject.Services
 
         public async Task SalvaJogosAmanha(int qtdWebDrivers = 1, bool headless = false)
         {
-            
+
             FirefoxOptions options = new FirefoxOptions();
-            IWebDriver wd1 = new FirefoxDriver(_configuration.DriverFirefoxPath, options);
-            IWebDriver wd2 = new FirefoxDriver(_configuration.DriverFirefoxPath, options);
+            IWebDriver wd1 = new FirefoxDriver(_configuration.DriverFirefoxPath, options, TimeSpan.FromMinutes(10));
+            IWebDriver wd2 = new FirefoxDriver(_configuration.DriverFirefoxPath, options, TimeSpan.FromMinutes(10));
             wd1.Manage().Timeouts().PageLoad = new TimeSpan(10, 0, 0);
             wd2.Manage().Timeouts().PageLoad = new TimeSpan(10, 0, 0);
             try
@@ -77,7 +77,7 @@ namespace BetProject.Services
             }
             catch (Exception e)
             {
-                _telegramService.EnviaMensagemParaOGrupo("Erro app: "+ e.Message);
+                _telegramService.EnviaMensagemParaOGrupo("Erro app: " + e.Message);
                 wd1.Dispose();
                 wd2.Dispose();
             }
