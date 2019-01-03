@@ -36,7 +36,9 @@ namespace BetProject.Infra.Repositories
                 return s.Query<Jogo>().FirstOrDefault(jq => jq.IdJogoBet == idBet &&
                                                      jq.Minutos != null &&
                                                      jq.Time1.AcimaAbaixo.Any() &&
-                                                     jq.Time2.AcimaAbaixo.Any()) != null;
+                                                     jq.Time2.AcimaAbaixo.Any() &&
+                                                     jq.Ignorar == false &&
+                                                     jq.TimesComPoucosJogos == false) != null;
         }
     }
 }

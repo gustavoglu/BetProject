@@ -56,7 +56,8 @@ namespace BetProject.Services
                              _driver.FindElement(By.ClassName("mstat")).FindElements(By.TagName("span"))[0]?.Text :
                              "";
             }
-            catch {
+            catch
+            {
 
                 return "Sem status";
             }
@@ -64,8 +65,10 @@ namespace BetProject.Services
 
         }
 
+        
+
         public async Task AtualizaInformacoesBasicasJogo(Jogo jogo)
-        {   
+        {
             _driver.Navigate().GoToUrl(_configuration.Sites.Resultado.ResumoJogo.Replace("ID", jogo.IdJogoBet));
             await Task.Delay(2000);
 
@@ -108,7 +111,7 @@ namespace BetProject.Services
             _driver.Navigate().GoToUrl(_configuration.Sites.Resultado.ResumoJogo.Replace("ID", idBet));
             await Task.Delay(2000);
 
-            if (!JogoClassificacao())
+            if (!JogoClassificacao() || JogoSemJogosParaAnalise(idBet))
             {
                 _idContainerRepository.IgnoraIdJogo(idBet);
                 return;
@@ -124,12 +127,30 @@ namespace BetProject.Services
             await PegaInfosAcimaAbaixo(idBet, times, jogo.GolsTime1 + jogo.GolsTime2);
 
             PreencheCamposAnaliseJogo(jogo);
-             _analiseService.AnalisaMediaGolsMenorQue25(jogo);
+
+            if (jogo.TimesComPoucosJogos)
+            {
+                _idContainerRepository.IgnoraIdJogo(idBet);
+                return;
+            }
+
+            _analiseService.AnalisaMediaGolsMenorQue25(jogo);
             _analiseService.AnalisaSeMelhorJogo(jogo);
 
 
             _jogoRepository.Salvar(jogo);
 
+        }
+
+
+        public bool JogoSemJogosParaAnalise(string idBet)
+        {
+            try
+            {
+                _driver.Navigate().GoToUrl(_configuration.Sites.Resultado.ResumoJogoClassificacaoAcimaAbaixo_Total_05.Replace("ID", idBet));
+                return _driver.FindElement(By.Id("tabitem-over_under-overall")) == null;
+            }
+            catch { return true; }
         }
 
         private bool JogoClassificacao()

@@ -52,15 +52,15 @@ namespace BetProject.Services
 
         public async Task SalvaJogosAmanha(int qtdWebDrivers = 1, bool headless = false)
         {
+            
             FirefoxOptions options = new FirefoxOptions();
             IWebDriver wd1 = new FirefoxDriver(_configuration.DriverFirefoxPath, options);
             IWebDriver wd2 = new FirefoxDriver(_configuration.DriverFirefoxPath, options);
+            wd1.Manage().Timeouts().PageLoad = new TimeSpan(10, 0, 0);
+            wd2.Manage().Timeouts().PageLoad = new TimeSpan(10, 0, 0);
             try
             {
                 ResultadosSiteHelper.CarregandoJogos = true;
-
-                wd1.Manage().Timeouts().PageLoad = new TimeSpan(10, 0, 0);
-                wd2.Manage().Timeouts().PageLoad = new TimeSpan(10, 0, 0);
                 ResultadoSiteService rs1 = new ResultadoSiteService(wd1);
                 ResultadoSiteService rs2 = new ResultadoSiteService(wd2);
 
