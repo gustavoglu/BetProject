@@ -43,7 +43,7 @@ namespace BetProject.Services
             List<IWebDriver> webDrivers = new List<IWebDriver>();
             for (int i = 0; i < qtdWebDrivers; i++)
             {
-                var wd = new FirefoxDriver(_configuration.DriverFirefoxPath, options, TimeSpan.FromMinutes(10));
+                var wd = new FirefoxDriver(_configuration.DriverFirefoxPath, options, TimeSpan.FromDays(1));
                 wd.Manage().Timeouts().PageLoad = new TimeSpan(10, 0, 0);
                 webDrivers.Add(wd);
             }
