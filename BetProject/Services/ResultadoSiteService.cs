@@ -297,6 +297,7 @@ namespace BetProject.Services
 
         public async Task CriarOuAtualizaInfosJogo(string id, bool amanha = false)
         {
+            Console.WriteLine($"Criando ou Atualizando ID: {id} as {DateTime.Now}");
             var idContainer = !amanha ? _idContainerRepository.TrazerIdContainerHoje() :
                                         _idContainerRepository.TrazerIdContainerAmanha();
 
@@ -358,7 +359,7 @@ namespace BetProject.Services
 
             if (DateTime.Now >= new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 19, 00, 00))
             {
-                Console.WriteLine($"Salvando Jogos Do Dia as {DateTime.Now}");
+                Console.WriteLine($"Salvando Jogos De Amanhã as {DateTime.Now}");
                 Task.Factory.StartNew(async () =>
                 {
                     await SalvaJogosDeAmanha();
@@ -371,7 +372,7 @@ namespace BetProject.Services
 
             if (DateTime.Now >= new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 00, 00, 00))
             {
-
+                Console.WriteLine($"Salvando Jogos Do Dia as {DateTime.Now}");
                 if (idContainer == null || !idContainer.Ids.Any())
                 {
                     ResultadosSiteHelper.CarregandoJogos = true;
@@ -433,6 +434,7 @@ namespace BetProject.Services
         {
             while (true)
             {
+                GC.Collect();;
                 await CarregaJogosDoDia(descending);
                 var idContainer = _idContainerRepository.TrazerIdContainerHoje();
 

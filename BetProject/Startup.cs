@@ -42,7 +42,7 @@ namespace BetProject
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
             try
             {
-                ts.EnviaMensagemParaOGrupo("App Iniciado");
+                //ts.EnviaMensagemParaOGrupo("App Iniciado");
 
                 
                 //ps.SalvaJogosAmanha(2).GetAwaiter().GetResult();
@@ -50,6 +50,7 @@ namespace BetProject
             }
             catch(Exception e)
             {
+                GC.Collect();
                 Console.WriteLine("Erro: " + e.Message + " - " + e.StackTrace);
                 ps.Dispose();
                 ts.EnviaMensagemParaOGrupo("Erro App : " + e.Message);
