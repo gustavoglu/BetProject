@@ -131,7 +131,13 @@ namespace BetProject.Services
         {
             var container = amanha ? _idContainerRepository.TrazerIdContainerAmanha() : _idContainerRepository.TrazerIdContainerHoje();
             var jogos = _jogoRepository.TrazJogosPorIds(container.Ids.Select(ji => ji.Id).ToArray());
-            var top4IdsMedia = jogos.Distinct().OrderByDescending(j => j.MediaGolsTotal).Take(4).ToList();
+            var jogosFS = jogos.Where(j => j.UmTimeFazMaisGolEOutroSofreMaisGol).ToList();
+
+            var top4IdsMedia = jogos.Where(j => !jogosFS.Exists(fs => fs.IdJogoBet ==j.IdJogoBet))
+                                .Distinct()
+                                .OrderByDescending(j => j.MediaGolsTotal)
+                                .Take(4).ToList();
+
             var jogosConfirmados = jogos.Where(j => j.UmTimeFazMaisGolEOutroSofreMaisGol || top4IdsMedia.Exists(i => i.Id == j.Id)).ToList();
             var idsJogos = container.Ids.Where(i => jogosConfirmados.Exists(j => j.IdJogoBet == i.Id)).Distinct().ToList();
             return idsJogos;
@@ -331,7 +337,7 @@ namespace BetProject.Services
 
         public async Task SalvaJogosDeHoje(bool descending = false, IWebDriver driver = null)
         {
-    
+
             Console.WriteLine($"Salvando Jogos De Hoje as {DateTime.Now}");
 
             ResultadosSiteHelper.CarregandoJogos = true;
@@ -529,10 +535,10 @@ namespace BetProject.Services
             Console.WriteLine($"Tentando carregar novamente Jogos De Hoje as {DateTime.Now}");
             Task.Factory.StartNew(async () =>
             {
-               
+
                 try
                 {
-                    foreach (var i in idContainer.IdsComErro.OrderBy(i => i.DataInicio).Select(i => i.Id).Distinct()) await rs1.CriarOuAtualizaInfosJogo(i,false,false);
+                    foreach (var i in idContainer.IdsComErro.OrderBy(i => i.DataInicio).Select(i => i.Id).Distinct()) await rs1.CriarOuAtualizaInfosJogo(i, false, false);
                 }
                 catch
                 {
@@ -561,14 +567,26 @@ namespace BetProject.Services
             return container.Ids.Exists(i => i.Id == idBet && i.Ignorar);
         }
 
+        double TempoDiferencaJogo(IdJogo i)
+        {
+            var diferenca = DateTime.Now.Date > i.DataInicio.Date ? (DateTime.Now - i.DataInicio.AddDays(1)).TotalMinutes :
+                                    (DateTime.Now - i.DataInicio).TotalMinutes;
+            return diferenca;
+        }
+
         public async Task StartAnaliseLive(bool descending = false)
         {
             while (true)
             {
                 GC.Collect(); ;
                 await CarregaJogosDeAmanha(descending);
-               
-                var jogos = ListaDeJogos();
+                var jogos = ListaDeJogos().Where(i => TempoDiferencaJogo(i) > 1 && TempoDiferencaJogo(i) < 80 ).ToList();
+                if (!jogos.Any())
+                {
+                    Console.WriteLine($"Nenhum Jogo Para Analisar no Momento as {DateTime.Now} Aguardando 5 Minutos...");
+                    await Task.Delay(TimeSpan.FromMinutes(5));
+                };
+
                 if (jogos.Any())
                 {
                     this._driver = SeleniumHelper.CreateDefaultWebDriver(true);
