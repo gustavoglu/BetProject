@@ -94,6 +94,7 @@ namespace BetProject.Services
                         _telegramService.EnviaMensagemParaOGrupo(MensagemJogo(jogo, null, 0.5));
 
                         _idContainerRepository.SalvaEnvioDeNotificao(jogo.IdJogoBet, "0.5", 1);
+                        return;
                     }
                 }
 
@@ -111,6 +112,7 @@ namespace BetProject.Services
                         _telegramService.EnviaMensagemParaOGrupo(MensagemJogo(jogo, null, 0.5));
 
                         _idContainerRepository.SalvaEnvioDeNotificao(jogo.IdJogoBet, "0.5", 1);
+                        return;
                     }
                 }
 
@@ -144,6 +146,7 @@ namespace BetProject.Services
                     _telegramService.EnviaMensagemParaOGrupo(MensagemJogo(jogo, null, 0.5));
 
                     _idContainerRepository.SalvaEnvioDeNotificao(jogo.IdJogoBet, "0.5", 2);
+                    return;
                 }
             }
 
@@ -160,6 +163,7 @@ namespace BetProject.Services
                     _telegramService.EnviaMensagemParaOGrupo(MensagemJogo(jogo, null, 0.5));
 
                     _idContainerRepository.SalvaEnvioDeNotificao(jogo.IdJogoBet, "0.5", 2);
+                    return;
                 }
             }
 
@@ -174,6 +178,7 @@ namespace BetProject.Services
                 {
                     _telegramService.EnviaMensagemParaOGrupo(MensagemJogo(jogo, null, 1.5));
                     _idContainerRepository.SalvaEnvioDeNotificao(jogo.IdJogoBet, "1.5", 2);
+                    return;
                 }
             }
 
@@ -188,6 +193,7 @@ namespace BetProject.Services
                     {
                         _telegramService.EnviaMensagemParaOGrupo(MensagemJogo(jogo, null, 2.5));
                         _idContainerRepository.SalvaEnvioDeNotificao(jogo.IdJogoBet, "2.5", 1);
+                        return;
                     }
                 }
             }
@@ -205,6 +211,7 @@ namespace BetProject.Services
                     {
                         _telegramService.EnviaMensagemParaOGrupo(MensagemJogo(jogo, null, 3.5));
                         _idContainerRepository.SalvaEnvioDeNotificao(jogo.IdJogoBet, "3.5", 1);
+                        return;
                     }
                 }
             }
