@@ -128,6 +128,7 @@ namespace BetProject.Services
                         _telegramService.EnviaMensagemParaOGrupo(MensagemJogo(jogo, null, 1.5));
 
                         _idContainerRepository.SalvaEnvioDeNotificao(jogo.IdJogoBet, "1.5", 1);
+                        return;
                     }
                 }
             }

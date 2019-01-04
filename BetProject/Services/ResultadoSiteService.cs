@@ -127,7 +127,6 @@ namespace BetProject.Services
             return idLi4.Contains("li-match-standings");
         }
 
-
         public List<IdJogo> ListaDeJogos(bool amanha = false)
         {
             var container = amanha ? _idContainerRepository.TrazerIdContainerAmanha() : _idContainerRepository.TrazerIdContainerHoje();
@@ -308,8 +307,9 @@ namespace BetProject.Services
 
                 if (!Srf(classInfo) && !JogoCanceladoAdiadoOuEncerrado(classInfo))
                 {
-                    string horaInicio = tr.FindElement(By.ClassName("cell_ad")).Text;
-                    IdJogo idJogo = new IdJogo(tr.GetAttribute("id").Substring(4), DateTime.Parse(horaInicio));
+                    DateTime dataInicio = DateTime.Parse(tr.FindElement(By.ClassName("cell_ad")).Text);
+                    if (amanha) dataInicio = dataInicio.AddDays(1);
+                    IdJogo idJogo = new IdJogo(tr.GetAttribute("id").Substring(4), dataInicio);
                     idJogos.Add(idJogo);
                 }
             }
@@ -328,7 +328,6 @@ namespace BetProject.Services
             _idContainerRepository.Salvar(idContainerHoje);
             return idContainerHoje;
         }
-
 
         public async Task SalvaJogosDeHoje(bool descending = false, IWebDriver driver = null)
         {
@@ -353,7 +352,6 @@ namespace BetProject.Services
 
             ResultadosSiteHelper.CarregandoJogos = false;
         }
-
 
         public async Task SalvaJogosDeAmanha(bool descending = false, IWebDriver driver = null)
         {
@@ -390,7 +388,6 @@ namespace BetProject.Services
                 _analiseService.AnalisaSeMelhorJogo(jogo);
             }
         }
-
 
         public async Task CriarOuAtualizaInfosJogo2(string id, IWebElement tr, bool amanha = false)
         {
@@ -509,6 +506,7 @@ namespace BetProject.Services
                 ResultadosSiteHelper.CarregandoJogos = false;
                 wd1.Dispose();
                 wd2.Dispose();
+                await TentaCarregarJogosComErroHoje();
             }
         }
 
@@ -569,7 +567,7 @@ namespace BetProject.Services
             {
                 GC.Collect(); ;
                 await CarregaJogosDeAmanha(descending);
-               // await TentaCarregarJogosComErroHoje();
+               
                 var jogos = ListaDeJogos();
                 if (jogos.Any())
                 {
@@ -577,10 +575,11 @@ namespace BetProject.Services
                     _jogoService = new JogoService(_driver);
                     foreach (var i in jogos)
                     {
-                        var diferenca = (DateTime.Now - i.DataInicio.AddDays(1)).TotalMinutes;
+                        var diferenca = DateTime.Now.Date > i.DataInicio.Date ? (DateTime.Now - i.DataInicio.AddDays(1)).TotalMinutes :
+                                        (DateTime.Now - i.DataInicio).TotalMinutes;
                         if (diferenca < 80 && diferenca > 1)
                         {
-                            var minutagem = Math.Ceiling(diferenca > 60 ? diferenca - 15 : diferenca);
+                            var minutagem = Math.Ceiling(diferenca > 60 ? diferenca - 18 : diferenca);
 
                             try
                             {
