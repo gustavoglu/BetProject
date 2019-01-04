@@ -53,7 +53,7 @@ namespace BetProject.Services
 
         public async Task SalvaJogosAmanha(int qtdWebDrivers = 1, bool headless = false)
         {
-    
+
             FirefoxOptions options = new FirefoxOptions();
             IWebDriver wd1 = new FirefoxDriver(_configuration.DriverFirefoxPath, options, TimeSpan.FromDays(1));
             IWebDriver wd2 = new FirefoxDriver(_configuration.DriverFirefoxPath, options, TimeSpan.FromDays(1));
@@ -87,28 +87,14 @@ namespace BetProject.Services
 
         public async Task Iniciar(int qtdWebDrivers = 1, bool headless = false)
         {
-            WebDriverCollectiont = WebDriverList(qtdWebDrivers, headless);
             try
             {
-                for (int i = 0; i < WebDriverCollectiont.Count; i++)
-                {
-                    var wd = WebDriverCollectiont[i];
-                    var rs = new ResultadoSiteService(wd);
-                    if (i + 1 == WebDriverCollectiont.Count)
-                    {
-                        await rs.StartAnaliseLive(i % 2 == 0);
-                    }
-                    else
-                    {
-                        Task.Factory.StartNew(() => rs.StartAnaliseLive(i % 2 == 0));
-                        if (i == 0) await Task.Delay(5000);
-                    }
-                }
+                var rs = new ResultadoSiteService();
+                await rs.StartAnaliseLive();
             }
             catch (Exception e)
             {
                 _telegramService.EnviaMensagemParaOGrupo(e.Message);
-                WebDriverCollectiont.ForEach(wd => wd.Dispose());
             }
         }
 

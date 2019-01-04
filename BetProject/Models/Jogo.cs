@@ -20,6 +20,9 @@ namespace BetProject.Models
 
             OddOUs = new List<OddOU>();
             ResultadosTempo = new List<ResultadoTempo>();
+            FimPrimeroTempo = dataInicio.AddMinutes(45);
+            InicioSegundoTempo = dataInicio.AddMinutes(60);
+            FimSegundoTempo = InicioSegundoTempo.AddMinutes(45);
 
         }
 
@@ -39,6 +42,9 @@ namespace BetProject.Models
 
             OddOUs = new List<OddOU>();
             ResultadosTempo = new List<ResultadoTempo>();
+            FimPrimeroTempo = dataInicio.AddMinutes(45);
+            InicioSegundoTempo = dataInicio.AddMinutes(60);
+            FimSegundoTempo = InicioSegundoTempo.AddMinutes(45);
         }
 
         public string Id { get; set; }
@@ -74,6 +80,9 @@ namespace BetProject.Models
         public int SomaOvers15 { get; set; } = 0;
         public int SomaOvers25 { get; set; } = 0;
         public int SomaTotalOvers { get; set; }
+        public DateTime FimPrimeroTempo { get; set; }
+        public DateTime InicioSegundoTempo { get; set; }
+        public DateTime FimSegundoTempo{ get; set; }
         public string LinkResultados { get; set; }
         public bool Ignorar { get; set; } = false;
     }

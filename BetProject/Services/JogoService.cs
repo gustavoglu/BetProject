@@ -23,6 +23,7 @@ namespace BetProject.Services
         private readonly IdContainerRepository _idContainerRepository;
         private readonly JogoRepository _jogoRepository;
         private readonly AnaliseService _analiseService;
+        
         public JogoService(IWebDriver driver)
         {
             _driver = driver;
@@ -64,17 +65,33 @@ namespace BetProject.Services
 
         }
 
-        
+
+        public void AtualizaInformacoesBasicasJogo2( IWebElement tr,Jogo jogo)
+        {
+            string minutos = "";
+            string score = "";
+            try
+            {
+               minutos=  tr.FindElement(By.ClassName("cell_aa")).FindElement(By.TagName("span")).Text;
+            }
+            catch { }
+
+            try
+            {
+                score = tr.FindElement(By.ClassName("cell_sa")).Text;
+            }
+            catch { }
+            jogo.Status = JogoHelper.StatusJogo(minutos) ? minutos : "Sem Status";
+            jogo.Minutos = JogoHelper.StatusJogo(minutos)? "0" : minutos;
+            jogo.GolsTime1 = TimeHelper.GolsScoreConvert(score,true);
+            jogo.GolsTime2 = TimeHelper.GolsScoreConvert(score, false);
+        }
+
 
         public async Task AtualizaInformacoesBasicasJogo(Jogo jogo)
         {
             _driver.Navigate().GoToUrl(_configuration.Sites.Resultado.ResumoJogo.Replace("ID", jogo.IdJogoBet));
             await Task.Delay(2000);
-
-            var status = PegaStatus();
-
-            if (status == "Intervalo" || status == "Encerrado" || status == "Sem status") return;
-            string minutos = null;
 
             int score1 = 0;
             int score2 = 0;
@@ -86,20 +103,6 @@ namespace BetProject.Services
             }
             catch { };
 
-
-            try
-            {
-                minutos = _driver.FindElement(By.Id("atomclock"))
-                  .FindElements(By.TagName("span"))[0].Text;
-            }
-            catch { };
-
-            if (status == "Intervalo") minutos = "45";
-
-            var divLiga = _driver.FindElement(By.ClassName("fleft"));
-
-            jogo.Status = status;
-            jogo.Minutos = minutos;
             jogo.GolsTime1 = score1;
             jogo.GolsTime2 = score2;
         }

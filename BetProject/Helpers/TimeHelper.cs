@@ -106,5 +106,13 @@ namespace BetProject.Helpers
 
             return qtdJogosTime.HasValue ? qtdJogosTime.Value : time.AcimaAbaixo.FirstOrDefault(t => t.Tipo == tipo).Overs[0].TotalUltimosJogos;
         }
+
+        public static int GolsScoreConvert(string gols, bool time1 = true)
+        {
+            if (string.IsNullOrEmpty(gols) || string.IsNullOrWhiteSpace(gols)) return 0;
+            if (time1) return int.Parse(gols[0].ToString());
+            else return int.Parse(gols[gols.Length].ToString());
+        }
+
     }
 }
