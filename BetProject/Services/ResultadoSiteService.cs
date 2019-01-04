@@ -133,7 +133,7 @@ namespace BetProject.Services
             var jogos = _jogoRepository.TrazJogosPorIds(container.Ids.Select(ji => ji.Id).ToArray());
             var jogosFS = jogos.Where(j => j.UmTimeFazMaisGolEOutroSofreMaisGol).ToList();
 
-            var top4IdsMedia = jogos.Where(j => !jogosFS.Exists(fs => fs.IdJogoBet ==j.IdJogoBet))
+            var top4IdsMedia = jogos.Where(j => !jogosFS.Exists(fs => fs.IdJogoBet == j.IdJogoBet))
                                 .Distinct()
                                 .OrderByDescending(j => j.MediaGolsTotal)
                                 .Take(4).ToList();
@@ -571,6 +571,7 @@ namespace BetProject.Services
         {
             var diferenca = DateTime.Now.Date > i.DataInicio.Date ? (DateTime.Now - i.DataInicio.AddDays(1)).TotalMinutes :
                                     (DateTime.Now - i.DataInicio).TotalMinutes;
+            diferenca = diferenca > 60 ? diferenca - 18 : diferenca;
             return diferenca;
         }
 
@@ -580,7 +581,7 @@ namespace BetProject.Services
             {
                 GC.Collect(); ;
                 await CarregaJogosDeAmanha(descending);
-                var jogos = ListaDeJogos().Where(i => TempoDiferencaJogo(i) > 1 && TempoDiferencaJogo(i) < 80 ).ToList();
+                var jogos = ListaDeJogos().Where(i => TempoDiferencaJogo(i) > 1 && TempoDiferencaJogo(i) < 80).ToList();
                 if (!jogos.Any())
                 {
                     Console.WriteLine($"Nenhum Jogo Para Analisar no Momento as {DateTime.Now} Aguardando 3 Minutos...");
@@ -594,29 +595,27 @@ namespace BetProject.Services
                     foreach (var i in jogos)
                     {
                         var diferenca = TempoDiferencaJogo(i);
-                        if (diferenca < 80 && diferenca > 1)
-                        {
-                            var minutagem = Math.Ceiling(diferenca > 60 ? diferenca - 18 : diferenca);
+                        var minutagem = Math.Ceiling(diferenca > 60 ? diferenca - 18 : diferenca);
 
-                            try
+                        try
+                        {
+                            Console.WriteLine($"Analisando ID: {i.Id} as {DateTime.Now}");
+                            await CriarOuAtualizaInfosJogo(i.Id);
+                            var jogo = _jogoRepository.TrazerJogoPorIdBet(i.Id);
+                            if (jogo != null)
                             {
-                                Console.WriteLine($"Analisando ID: {i.Id} as {DateTime.Now}");
-                                await CriarOuAtualizaInfosJogo(i.Id);
-                                var jogo = _jogoRepository.TrazerJogoPorIdBet(i.Id);
-                                if (jogo != null)
-                                {
-                                    jogo.Minutos = minutagem.ToString();
-                                    bool jogoProntoParaAnalise = _jogoRepository.JogoProntoParaAnalise(i.Id);
-                                    if (jogoProntoParaAnalise) _analiseService.AnalisaJogoLive(jogo);
-                                }
-                            }
-                            catch (Exception e)
-                            {
-                                var msg = e.Message;
-                                Console.WriteLine("Erro: " + e.Message + " IdBet: " + i.Id);
-                                _driver.Dispose();
+                                jogo.Minutos = minutagem.ToString();
+                                bool jogoProntoParaAnalise = _jogoRepository.JogoProntoParaAnalise(i.Id);
+                                if (jogoProntoParaAnalise) _analiseService.AnalisaJogoLive(jogo);
                             }
                         }
+                        catch (Exception e)
+                        {
+                            var msg = e.Message;
+                            Console.WriteLine("Erro: " + e.Message + " IdBet: " + i.Id);
+                            _driver.Dispose();
+                        }
+
                     }
                     _driver.Dispose();
                 }
