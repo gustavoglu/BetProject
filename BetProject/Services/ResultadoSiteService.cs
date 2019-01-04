@@ -583,8 +583,8 @@ namespace BetProject.Services
                 var jogos = ListaDeJogos().Where(i => TempoDiferencaJogo(i) > 1 && TempoDiferencaJogo(i) < 80 ).ToList();
                 if (!jogos.Any())
                 {
-                    Console.WriteLine($"Nenhum Jogo Para Analisar no Momento as {DateTime.Now} Aguardando 5 Minutos...");
-                    await Task.Delay(TimeSpan.FromMinutes(5));
+                    Console.WriteLine($"Nenhum Jogo Para Analisar no Momento as {DateTime.Now} Aguardando 3 Minutos...");
+                    await Task.Delay(TimeSpan.FromMinutes(3));
                 };
 
                 if (jogos.Any())
@@ -593,8 +593,7 @@ namespace BetProject.Services
                     _jogoService = new JogoService(_driver);
                     foreach (var i in jogos)
                     {
-                        var diferenca = DateTime.Now.Date > i.DataInicio.Date ? (DateTime.Now - i.DataInicio.AddDays(1)).TotalMinutes :
-                                        (DateTime.Now - i.DataInicio).TotalMinutes;
+                        var diferenca = TempoDiferencaJogo(i);
                         if (diferenca < 80 && diferenca > 1)
                         {
                             var minutagem = Math.Ceiling(diferenca > 60 ? diferenca - 18 : diferenca);
