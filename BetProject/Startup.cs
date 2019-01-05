@@ -42,7 +42,7 @@ namespace BetProject
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
             try
             {
-                ts.EnviaMensagemParaOGrupo("App Iniciado");
+                //ts.EnviaMensagemParaOGrupo("App Iniciado");
 
                 
                 //ps.SalvaJogosAmanha(2).GetAwaiter().GetResult();

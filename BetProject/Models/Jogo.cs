@@ -49,6 +49,7 @@ namespace BetProject.Models
 
         public string Id { get; set; }
         public string IdJogoBet { get; set; }
+        public string Observacoes { get; set; }
         public DateTime DataInicio  { get; set; }
         public Time Time1 { get; set; }
         public Time Time2 { get; set; }
@@ -75,6 +76,7 @@ namespace BetProject.Models
         public bool UmTimeFazMaisGolEOutroSofreMaisGol { get; set; } = false;
         public bool UmaDasMaioresMediasDoDia { get; set; } = false;
         public bool UmOuOsDoisTimesTemJogosOversMenorQue5 { get; set; }
+        public bool JogoComTimeComODobroDeGols { get; set; }
         public double MediaGolsTotal { get; set; }
         public int SomaOvers05 { get; set; } = 0;
         public int SomaOvers15 { get; set; } = 0;

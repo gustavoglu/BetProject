@@ -425,6 +425,7 @@ namespace BetProject.Services
             jogo.Time1.QtdTotalDeJogosOvers = TimeHelper.GetQtdJogos(jogo.Time1, EClassificacaoTipo.Casa);
             jogo.Time2.QtdTotalDeJogosOvers = TimeHelper.GetQtdJogos(jogo.Time2, EClassificacaoTipo.Fora);
             jogo.UmOuOsDoisTimesTemJogosOversMenorQue5 = (jogo.Time1.QtdTotalDeJogosOvers < 5 || jogo.Time2.QtdTotalDeJogosOvers < 5);
+            jogo.JogoComTimeComODobroDeGols = JogoValidations.JogoComTimeFazODobroDeGols(jogo);
         }
     }
 }

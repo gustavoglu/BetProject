@@ -56,6 +56,7 @@ namespace BetProject.Services
             _jogoService = new JogoService(_driver);
             _analiseService = new AnaliseService();
         }
+
         private void NavegarParaSite(string site)
         {
             _driver.Navigate().GoToUrl(site);
@@ -89,19 +90,7 @@ namespace BetProject.Services
         {
             var expandLeagueLink = _driver.FindElements(By.ClassName("expand-league-link")).ToList();
             if (!expandLeagueLink.Any()) return;
-            int count = expandLeagueLink.Count - 1;
-            while (count >= 0)
-            {
-                try
-                {
-                    var h = expandLeagueLink[count];
-                    h.Click();
-
-                }
-                catch { }
-                count--;
-            }
-
+            expandLeagueLink.ForEach(e => e.Click());
         }
 
         private bool ApostaBet(IWebElement tr)
@@ -127,20 +116,29 @@ namespace BetProject.Services
             return idLi4.Contains("li-match-standings");
         }
 
-        public List<IdJogo> ListaDeJogos(bool amanha = false)
+        public List<Jogo> ListaDeJogos(bool amanha = false)
         {
             var container = amanha ? _idContainerRepository.TrazerIdContainerAmanha() : _idContainerRepository.TrazerIdContainerHoje();
             var jogos = _jogoRepository.TrazJogosPorIds(container.Ids.Select(ji => ji.Id).ToArray());
-            var jogosFS = jogos.Where(j => j.UmTimeFazMaisGolEOutroSofreMaisGol).ToList();
+         
+            var jogosFSOuDobro = jogos.Where(j => j.UmTimeFazMaisGolEOutroSofreMaisGol ).Distinct().ToList();
 
-            var top4IdsMedia = jogos.Where(j => !jogosFS.Exists(fs => fs.IdJogoBet == j.IdJogoBet))
+            var top4IdsMedia = jogos.Where(j => !jogosFSOuDobro.Exists(fs => fs.IdJogoBet == j.IdJogoBet))
                                 .Distinct()
                                 .OrderByDescending(j => j.MediaGolsTotal)
                                 .Take(4).ToList();
 
-            var jogosConfirmados = jogos.Where(j => j.UmTimeFazMaisGolEOutroSofreMaisGol || top4IdsMedia.Exists(i => i.Id == j.Id)).ToList();
-            var idsJogos = container.Ids.Where(i => jogosConfirmados.Exists(j => j.IdJogoBet == i.Id)).Distinct().ToList();
-            return idsJogos;
+            top4IdsMedia.ForEach(j => j.Observacoes = "Top 4 Media Jogos");
+            jogosFSOuDobro.ForEach(j => j.Observacoes = "Jogos FeS");
+
+            var jogosFT0560 = jogos.Where(j => TempoDiferencaJogo(j) >= 50 && TempoDiferencaJogo(j) < 80 && j.GolsTotal == 0 && !j.UmTimeFazMaisGolEOutroSofreMaisGol && !top4IdsMedia.Exists(i => i.Id == j.Id))
+                .Distinct()
+                .ToList();
+
+            jogosFT0560.ForEach(j => j.Observacoes = "0x0 FT 0.5");
+
+            var jogosConfirmados = jogos.Where(j => j.UmTimeFazMaisGolEOutroSofreMaisGol || top4IdsMedia.Exists(i => i.Id == j.Id) || jogosFT0560.Exists(i => i.Id == j.Id)).ToList();
+            return jogosConfirmados;
         }
 
         public async Task<IdContainer> SalvaProximosJogos()
@@ -286,6 +284,47 @@ namespace BetProject.Services
             _idContainerRepository.Salvar(idContainerHoje);
             return idContainerHoje;
         }
+        
+        private async Task  VerificaJogosNãoCarregados(bool amanha = false)
+        {
+            NavegarParaSite(_configuration.Sites.Resultado.Principal);
+
+            if (amanha)
+                _driver.FindElement(By.ClassName("tomorrow")).Click();
+
+            var container = amanha ? _idContainerRepository.TrazerIdContainerAmanha() : _idContainerRepository.TrazerIdContainerHoje();
+
+            await Task.Delay(5000);
+            try
+            {
+                ExpandiTodasTabelas();
+            }
+            catch { }
+
+            List<IdJogo> idJogos = new List<IdJogo> { };
+
+            var trsJogos = _driver.FindElements(By.ClassName("stage-scheduled")).ToList();
+            var trsJogosLive = _driver.FindElements(By.ClassName("stage-live")).ToList();
+            if (trsJogosLive.Any()) trsJogosLive.ForEach(j => trsJogos.Add(j));
+
+            foreach (var tr in trsJogos)
+            {
+                string id = tr.GetAttribute("id").Substring(4);
+                if (!container.Ids.Exists(i => i.Id == id))
+                {
+                    string classInfo = tr.GetAttribute("class");
+
+                    if (!Srf(classInfo) && !JogoCanceladoAdiadoOuEncerrado(classInfo))
+                    {
+                        DateTime dataInicio = DateTime.Parse(tr.FindElement(By.ClassName("cell_ad")).Text);
+                        if (amanha) dataInicio = dataInicio.AddDays(1);
+                        container.IdsComErro.Add(new IdJogo(id, dataInicio));
+                    }
+                }
+            }
+
+            _idContainerRepository.Salvar(container);
+        }
 
         private async Task<IdContainer> SalvaJogosIds(bool amanha = false)
         {
@@ -307,37 +346,42 @@ namespace BetProject.Services
             var trsJogosLive = _driver.FindElements(By.ClassName("stage-live")).ToList();
             if (trsJogosLive.Any()) trsJogosLive.ForEach(j => trsJogos.Add(j));
 
+            var idContainer = _idContainerRepository.TrazerIdContainerHoje();
+
+            if (amanha)
+            {
+                idContainer = new IdContainer(idJogos, DateTime.Now.Date.AddDays(1));
+            }
+            else
+            {
+                if (idContainer != null) idContainer.Ids = idJogos;
+                else idContainer = new IdContainer(idJogos, DateTime.Now.Date);
+            }
+
+            _idContainerRepository.Salvar(idContainer);
+
             foreach (var tr in trsJogos)
             {
+                string id = tr.GetAttribute("id").Substring(4);
                 string classInfo = tr.GetAttribute("class");
 
                 if (!Srf(classInfo) && !JogoCanceladoAdiadoOuEncerrado(classInfo))
                 {
                     DateTime dataInicio = DateTime.Parse(tr.FindElement(By.ClassName("cell_ad")).Text);
                     if (amanha) dataInicio = dataInicio.AddDays(1);
-                    IdJogo idJogo = new IdJogo(tr.GetAttribute("id").Substring(4), dataInicio);
-                    idJogos.Add(idJogo);
+                    IdJogo idJogo = new IdJogo(id, dataInicio);
+                    idContainer.Ids.Add(idJogo);
                 }
             }
 
-            var idContainerHoje = _idContainerRepository.TrazerIdContainerHoje();
-            if (amanha)
-            {
-                idContainerHoje = new IdContainer(idJogos.ToList(), DateTime.Now.Date.AddDays(1));
-            }
-            else
-            {
-                if (idContainerHoje != null) idContainerHoje.Ids = idJogos;
-                else idContainerHoje = new IdContainer(idJogos.ToList(), DateTime.Now.Date);
-            }
-
-            _idContainerRepository.Salvar(idContainerHoje);
-            return idContainerHoje;
+            _idContainerRepository.Salvar(idContainer);
+            await VerificaJogosNãoCarregados(amanha);
+            idContainer = amanha ? _idContainerRepository.TrazerIdContainerAmanha() : _idContainerRepository.TrazerIdContainerHoje();
+            return idContainer;
         }
 
         public async Task SalvaJogosDeHoje(bool descending = false, IWebDriver driver = null)
         {
-
             Console.WriteLine($"Salvando Jogos De Hoje as {DateTime.Now}");
 
             ResultadosSiteHelper.CarregandoJogos = true;
@@ -575,6 +619,33 @@ namespace BetProject.Services
             return diferenca;
         }
 
+        double TempoDiferencaJogo(Jogo j)
+        {
+            var diferenca = DateTime.Now.Date > j.DataInicio.Date ? (DateTime.Now - j.DataInicio.AddDays(1)).TotalMinutes :
+                                    (DateTime.Now - j.DataInicio).TotalMinutes;
+            diferenca = diferenca > 60 ? diferenca - 18 : diferenca;
+            return diferenca;
+        }
+
+        public void AtualizaJogosComErros(IdContainer container = null, bool amanha = false)
+        {
+            container = container == null ? amanha ? _idContainerRepository.TrazerIdContainerAmanha() : 
+                                                     _idContainerRepository.TrazerIdContainerHoje() : 
+                                                     container;
+
+            JogoRepository jr = new JogoRepository();
+            var idsJogosComErro = container.IdsComErro.Select(i => i.Id).Distinct().ToList();
+            var jogos = jr.TrazJogosPorIds(idsJogosComErro.ToArray());
+            foreach (var i in idsJogosComErro)
+            {
+                var id = container.IdsComErro.FirstOrDefault(j => j.Id == i);
+                var jogoPronto = _jogoRepository.JogoProntoParaAnalise(i);
+                if (jogoPronto) container.IdsComErro.Remove(id);
+            }
+
+            _idContainerRepository.Salvar(container);
+        }
+
         public async Task StartAnaliseLive(bool descending = false)
         {
             while (true)
@@ -599,20 +670,24 @@ namespace BetProject.Services
 
                         try
                         {
-                            Console.WriteLine($"Analisando ID: {i.Id} as {DateTime.Now}");
-                            await CriarOuAtualizaInfosJogo(i.Id);
-                            var jogo = _jogoRepository.TrazerJogoPorIdBet(i.Id);
+                            Console.WriteLine($"Analisando ID: {i.IdJogoBet} as {DateTime.Now}");
+                            await CriarOuAtualizaInfosJogo(i.IdJogoBet);
+                            var jogo = _jogoRepository.TrazerJogoPorIdBet(i.IdJogoBet);
                             if (jogo != null)
                             {
                                 jogo.Minutos = minutagem.ToString();
-                                bool jogoProntoParaAnalise = _jogoRepository.JogoProntoParaAnalise(i.Id);
-                                if (jogoProntoParaAnalise) _analiseService.AnalisaJogoLive(jogo);
+                                bool jogoProntoParaAnalise = _jogoRepository.JogoProntoParaAnalise(i.IdJogoBet);
+                                if (jogoProntoParaAnalise)
+                                {
+                                    jogo.Observacoes = jogos.FirstOrDefault(j => j.IdJogoBet == jogo.IdJogoBet).Observacoes;
+                                    _analiseService.AnalisaJogoLive(jogo);
+                                }
                             }
                         }
                         catch (Exception e)
                         {
                             var msg = e.Message;
-                            Console.WriteLine("Erro: " + e.Message + " IdBet: " + i.Id);
+                            Console.WriteLine("Erro: " + e.Message + " IdBet: " + i.IdJogoBet);
                             _driver.Dispose();
                         }
 

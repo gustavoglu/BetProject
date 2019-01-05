@@ -95,7 +95,12 @@ namespace BetProject.Validations
 
         }
 
-
+        public static bool JogoComTimeFazODobroDeGols(Jogo jogo)
+        {
+            bool time1DobroGols = jogo.Time1.GolsRealizados >= (jogo.Time1.QtdJogos * 2);
+            bool time2DobroGols = jogo.Time2.GolsRealizados >= (jogo.Time2.QtdJogos * 2);
+            return time1DobroGols || time2DobroGols;
+        }
 
     }
 }

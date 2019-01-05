@@ -21,24 +21,29 @@ namespace BetProject.Services
             _idContainerRepository = new IdContainerRepository();
         }
 
-        public string MensagemJogo(Jogo jogo, string topInfo = null, double? over = null)
+        public string 
+            MensagemJogo(Jogo jogo, string topInfo = null, double? over = null)
         {
             topInfo = topInfo == null ? "" : topInfo + "\n";
-            string overMsg = over.HasValue ? $"Over: {over.Value} \n" : "";
-            return $"{topInfo}{jogo.Time1.Nome} - {jogo.Time2.Nome} \n" +
-                                                                $"{jogo.Liga} \n" +
+            string overMsg = over.HasValue ? $"Over: {over.Value}\n" : "";
+            return $"{topInfo}{jogo.Time1.Nome} - {jogo.Time2.Nome}\n" +
+                                                                $"{jogo.Liga}\n" +
                                                                 $"{jogo.DataInicio}\n" +
-                                                                $"Média Gols: {jogo.Time1.MediaGols} / {jogo.Time2.MediaGols} | {jogo.MediaGolsTotal} \n" +
-                                                                $"Gols: {jogo.Time1.Gols} / {jogo.Time2.Gols}  \n" +
-                                                                $"Overs 0.5: {jogo.Time1.Overs05} / {jogo.Time2.Overs05} | {jogo.SomaOvers05} \n" +
-                                                                $"Overs 1.5: {jogo.Time1.Overs15} / {jogo.Time2.Overs15} | {jogo.SomaOvers15} \n" +
-                                                                $"Overs 2.5: {jogo.Time1.Overs25} / {jogo.Time2.Overs25} | {jogo.SomaOvers25} \n" +
-                                                                $"Soma Overs: {jogo.SomaTotalOvers} \n" +
-                                                                $"Class: {jogo.Time1.Classificacao} / {jogo.Time2.Classificacao} de {jogo.ClassificaoTotal} \n " +
-                                                                $"Classif. Perto : {jogo.ClassifPerto} \n " +
-                                                                $"Gols Irregulares: {jogo.GolsIrregulares} \n" +
-                                                                $"Os dois times fazem poucos gols: { jogo.OsDoisTimesSofremGols} \n" +
-                                                                $"Um Time Faz mais Gols e outro Sofre Mais Gols: { jogo.UmTimeFazMaisGolEOutroSofreMaisGol } \n" +
+                                                                $"Obs: {jogo.Observacoes}\n" +
+                                                                $"Placar: {jogo.GolsTime1} x {jogo.GolsTime2}\n" +
+                                                                $"Gols Total Placar: {jogo.GolsTotal}\n" +
+                                                                $"Média Gols: {jogo.Time1.MediaGols} / {jogo.Time2.MediaGols} | {jogo.MediaGolsTotal}\n" +
+                                                                $"Gols: {jogo.Time1.Gols} / {jogo.Time2.Gols}\n" +
+                                                                $"Overs 0.5: {jogo.Time1.Overs05} / {jogo.Time2.Overs05} | {jogo.SomaOvers05}\n" +
+                                                                $"Overs 1.5: {jogo.Time1.Overs15} / {jogo.Time2.Overs15} | {jogo.SomaOvers15}\n" +
+                                                                $"Overs 2.5: {jogo.Time1.Overs25} / {jogo.Time2.Overs25} | {jogo.SomaOvers25}\n" +
+                                                                $"Soma Overs: {jogo.SomaTotalOvers}\n" +
+                                                                $"Class: {jogo.Time1.Classificacao} / {jogo.Time2.Classificacao} de {jogo.ClassificaoTotal}\n " +
+                                                                $"Classif. Perto : {jogo.ClassifPerto}\n " +
+                                                                $"Gols Irregulares: {jogo.GolsIrregulares}\n" +
+                                                                $"Os dois times fazem poucos gols: { jogo.OsDoisTimesSofremGols}\n" +
+                                                                $"Um Time Faz mais Gols e outro Sofre Mais Gols: { jogo.UmTimeFazMaisGolEOutroSofreMaisGol }\n" +
+                                                                $"Jogo Com Time Com o Dobro de Gols: { jogo.JogoComTimeComODobroDeGols }\n" +
                                                                 overMsg +
                                                                 $"Boa Aposta\n" +
                                                                 jogo.LinkResultados;
@@ -77,13 +82,30 @@ namespace BetProject.Services
 
             int minutos = JogoHelper.ConvertMinutos(jogo.Minutos);
 
+            if (jogo.Observacoes == "0x0 FT 0.5" &&
+                minutos > 55 &&
+                jogo.GolsTotal == 0 &&
+                jogo.SomaOvers05 > 8 &&
+                jogo.SomaOvers15 >= 7 &&
+                jogo.MediaGolsTotal >= 2 &&
+                jogo.Time1.MediaGols > 1.9 &&
+                jogo.Time2.MediaGols > 1.9)
+            {
+                if (!_idContainerRepository.NotificacaoJaEnviada(jogo.IdJogoBet, "0.5", 2))
+                {
+                    _telegramService.EnviaMensagemParaOGrupo(MensagemJogo(jogo, null, 0.5));
+                    _idContainerRepository.SalvaEnvioDeNotificao(jogo.IdJogoBet, "0.5", 2);
+                    return;
+                }
+            }
+
             if (minutos > 5 && minutos < 80)
             {
 
                 if (minutos >= 13 && minutos <= 22 &&
                    jogo.GolsTotal == 0 &&
                    jogo.UmOuOsDoisTimesTemJogosOversMenorQue5 &&
-                   jogo.SomaOvers05 > 8 &&
+                   jogo.SomaOvers05 >= 8 &&
                    jogo.SomaOvers15 >= 7 &&
                    jogo.MediaGolsTotal >= 2 &&
                    jogo.Time1.MediaGols > 1.9 &&
@@ -100,7 +122,9 @@ namespace BetProject.Services
 
 
 
-                if (minutos >= 13 && minutos <= 22 && jogo.GolsTotal == 0 &&
+                if (minutos >= 13 &&
+                    minutos <= 22 &&
+                    jogo.GolsTotal == 0 &&
                     jogo.SomaOvers05 > 8 &&
                     jogo.SomaOvers15 >= 7 &&
                     jogo.MediaGolsTotal >= 2 &&
@@ -121,7 +145,7 @@ namespace BetProject.Services
                         jogo.MediaGolsTotal >= 2 &&
                         jogo.Time1.MediaGols > 1.9 &&
                         jogo.Time2.MediaGols > 1.9 &&
-                          jogo.SomaOvers15 >= 7)
+                        jogo.SomaOvers15 >= 7)
                 {
                     if (!_idContainerRepository.NotificacaoJaEnviada(jogo.IdJogoBet, "1.5", 1))
                     {
@@ -183,7 +207,7 @@ namespace BetProject.Services
                 }
             }
 
-            if (jogo.GolsTotal == 2 && minutos >= 62)
+            if (jogo.GolsTotal == 2 && minutos >= 60)
             {
                 if (jogo.SomaOvers25 >= 6 &&
                     jogo.MediaGolsTotal >= 2.9 &&
@@ -201,9 +225,11 @@ namespace BetProject.Services
 
             int diferencaGols = jogo.GolsTime1 > jogo.GolsTime2 ? jogo.GolsTime1 - jogo.GolsTime2 : jogo.GolsTime2 - jogo.GolsTime1;
 
-            if (minutos >= 60 && jogo.GolsTotal > 2 && diferencaGols < 3)
+            if (minutos >= 60 &&
+                jogo.GolsTotal > 2 &&
+                diferencaGols < 3)
             {
-                if (jogo.SomaOvers25 >= 6 &&
+                if (jogo.SomaOvers25 > 6 &&
                     jogo.MediaGolsTotal >= 2.9 &&
                     jogo.Time1.MediaGols > 2.4 &&
                     jogo.Time2.MediaGols > 2.4)
