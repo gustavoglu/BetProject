@@ -109,6 +109,7 @@ namespace BetProject.Services
                 //wd1.Dispose();
                 //wd2.Dispose();
 
+                rs.ReanalisaJogosDeHoje(); return;
                 await rs.StartAnaliseLive();
             }
             catch (Exception e)

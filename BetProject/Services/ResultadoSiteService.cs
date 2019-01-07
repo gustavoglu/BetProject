@@ -433,9 +433,9 @@ namespace BetProject.Services
             var jogos = _jogoRepository.TrazJogosPorIds(container.Ids.Select(i => i.Id).ToArray());
             foreach (var jogo in jogos)
             {
-                _jogoService.PreencheCamposAnaliseJogo(jogo);
+                //_jogoService.PreencheCamposAnaliseJogo(jogo);
                 _analiseService.AnalisaMediaGolsMenorQue25(jogo);
-                _analiseService.AnalisaSeMelhorJogo(jogo);
+                //_analiseService.AnalisaSeMelhorJogo(jogo);
             }
         }
 
@@ -624,7 +624,7 @@ namespace BetProject.Services
             var diferenca = DateTime.Now.Date > j.DataInicio.Date ? (DateTime.Now - j.DataInicio.AddDays(1)).TotalMinutes :
                                     (DateTime.Now - j.DataInicio).TotalMinutes;
             diferenca = diferenca > 60 ? diferenca - 18 : diferenca;
-            return diferenca;
+            return Math.Ceiling(diferenca);
         }
 
         public void AtualizaJogosComErros(IdContainer container = null, bool amanha = false)
@@ -665,8 +665,7 @@ namespace BetProject.Services
                     _jogoService = new JogoService(_driver);
                     foreach (var i in jogos)
                     {
-                        var diferenca = TempoDiferencaJogo(i);
-                        var minutagem = Math.Ceiling(diferenca > 60 ? diferenca - 18 : diferenca);
+                        var minutagem = TempoDiferencaJogo(i);
 
                         try
                         {
