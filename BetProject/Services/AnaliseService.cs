@@ -21,7 +21,7 @@ namespace BetProject.Services
             _idContainerRepository = new IdContainerRepository();
         }
 
-        public string 
+        public string
             MensagemJogo(Jogo jogo, string topInfo = null, double? over = null)
         {
             topInfo = topInfo == null ? "" : topInfo + "\n";
@@ -74,6 +74,85 @@ namespace BetProject.Services
             _telegramService.EnviaMensagemParaOGrupo(MensagemJogo(jogo, "OVER", null), true);
         }
 
+        public bool ValidacaoBasica05(Jogo jogo)
+        {
+            return jogo.UmOuOsDoisTimesTemJogosOversMenorQue5 ? jogo.SomaOvers05 >= 8 : jogo.SomaOvers05 > 8 &&
+                   jogo.SomaOvers15 >= 7 &&
+                   jogo.MediaGolsTotal >= 2 &&
+                   jogo.Time1.MediaGols > 1.9 &&
+                   jogo.Time2.MediaGols > 1.9;
+        }
+        public bool ValidacaoBasica15(Jogo jogo)
+        {
+
+            return jogo.MediaGolsTotal > 2.4 &&
+                   jogo.Time1.MediaGols > 1.9 &&
+                   jogo.Time2.MediaGols > 1.9 &&
+                   jogo.SomaOvers15 >= 7;
+        }
+        public bool ValidacaoBasica25(Jogo jogo)
+        {
+
+            return jogo.SomaOvers25 > 6 &&
+                   jogo.MediaGolsTotal >= 2.9 &&
+                   jogo.Time1.MediaGols > 2.4 &&
+                   jogo.Time2.MediaGols > 2.4;
+        }
+        public bool ValidacaoBasica35(Jogo jogo)
+        {
+
+            int diferencaGols = jogo.GolsTime1 > jogo.GolsTime2 ? jogo.GolsTime1 - jogo.GolsTime2 : jogo.GolsTime2 - jogo.GolsTime1;
+
+            return jogo.SomaOvers25 > 6 &&
+                   jogo.MediaGolsTotal >= 2.9 &&
+                   jogo.Time1.MediaGols > 2.4 &&
+                   jogo.Time2.MediaGols > 2.4 &&
+                   jogo.GolsTotal > 2 &&
+                   diferencaGols < 3;;
+        }
+
+        public void AnalisaHT(Jogo jogo)
+        {
+            int minutos = JogoHelper.ConvertMinutos(jogo.Minutos);
+            bool validacaoBasica05 = ValidacaoBasica05(jogo);
+            bool validacaoBasica15 = ValidacaoBasica15(jogo);
+
+            if (minutos > 22) return;
+
+            if (minutos <= 8 && jogo.GolsTotal == 1 && validacaoBasica15) EnviaNotificacao(jogo, 1.5, "1.5", 1);
+            if (minutos > 13 && jogo.GolsTotal == 0 && validacaoBasica15) EnviaNotificacao(jogo, 0.5, "0.5", 1);
+        }
+
+        public void AnalisaFT(Jogo jogo)
+        {
+            int minutos = JogoHelper.ConvertMinutos(jogo.Minutos);
+            bool validacaoBasica05 = ValidacaoBasica05(jogo);
+            bool validacaoBasica15 = ValidacaoBasica15(jogo);
+            bool validacaoBasica25 = ValidacaoBasica25(jogo);
+            bool validacaoBasica35 = ValidacaoBasica35(jogo);
+
+            if (minutos < 55 || minutos > 75 ) return;
+
+            bool ft05_0x0 = jogo.Observacoes == "0x0 FT 0.5";
+
+            if (minutos >= 55 && jogo.GolsTotal == 0 && validacaoBasica05 && ft05_0x0) EnviaNotificacao(jogo, 0.5, "0.5", 3);
+            if (minutos >= 60 && jogo.GolsTotal == 0 && validacaoBasica05) EnviaNotificacao(jogo, 0.5, "0.5", 2);
+            if (minutos >= 60 && jogo.GolsTotal == 1 && validacaoBasica15) EnviaNotificacao(jogo, 1.5, "1.5", 2);
+            if (minutos >= 60 && jogo.GolsTotal > 2 && validacaoBasica35) EnviaNotificacao(jogo, 2.5, "2.5", 1);
+            if (minutos >= 60 && jogo.GolsTotal == 2 && validacaoBasica25) EnviaNotificacao(jogo, 3.5, "3.5", 1);
+        }
+
+
+        public void EnviaNotificacao(Jogo jogo, double valor, string desc, int numero)
+        {
+            if (!_idContainerRepository.NotificacaoJaEnviada(jogo.IdJogoBet, desc, numero))
+            {
+                _telegramService.EnviaMensagemParaOGrupo(MensagemJogo(jogo, null, valor));
+                _idContainerRepository.SalvaEnvioDeNotificao(jogo.IdJogoBet, desc, numero);
+                return;
+            }
+        }
+
         public void AnalisaJogoLive(Jogo jogo)
         {
             if (jogo.GolsTime1 + jogo.GolsTime2 > 3) return;
@@ -82,166 +161,168 @@ namespace BetProject.Services
 
             int minutos = JogoHelper.ConvertMinutos(jogo.Minutos);
 
-            if (jogo.Observacoes == "0x0 FT 0.5" &&
-                minutos > 55 &&
-                jogo.GolsTotal == 0 &&
-                jogo.SomaOvers05 > 8 &&
-                jogo.SomaOvers15 >= 7 &&
-                jogo.MediaGolsTotal >= 2 &&
-                jogo.Time1.MediaGols > 1.9 &&
-                jogo.Time2.MediaGols > 1.9)
-            {
-                if (!_idContainerRepository.NotificacaoJaEnviada(jogo.IdJogoBet, "0.5", 2))
-                {
-                    _telegramService.EnviaMensagemParaOGrupo(MensagemJogo(jogo, null, 0.5));
-                    _idContainerRepository.SalvaEnvioDeNotificao(jogo.IdJogoBet, "0.5", 2);
-                    return;
-                }
-            }
+            AnalisaHT(jogo);
+            AnalisaFT(jogo);
+            //if (jogo.Observacoes == "0x0 FT 0.5" &&
+            //    minutos > 55 &&
+            //    jogo.GolsTotal == 0 &&
+            //    jogo.SomaOvers05 > 8 &&
+            //    jogo.SomaOvers15 >= 7 &&
+            //    jogo.MediaGolsTotal >= 2 &&
+            //    jogo.Time1.MediaGols > 1.9 &&
+            //    jogo.Time2.MediaGols > 1.9)
+            //{
+            //    if (!_idContainerRepository.NotificacaoJaEnviada(jogo.IdJogoBet, "0.5", 2))
+            //    {
+            //        _telegramService.EnviaMensagemParaOGrupo(MensagemJogo(jogo, null, 0.5));
+            //        _idContainerRepository.SalvaEnvioDeNotificao(jogo.IdJogoBet, "0.5", 2);
+            //        return;
+            //    }
+            //}
 
-            if (minutos > 5 && minutos < 80)
-            {
+            //if (minutos > 5 && minutos < 80)
+            //{
 
-                if (minutos >= 13 && minutos <= 22 &&
-                   jogo.GolsTotal == 0 &&
-                   jogo.UmOuOsDoisTimesTemJogosOversMenorQue5 &&
-                   jogo.SomaOvers05 >= 8 &&
-                   jogo.SomaOvers15 >= 7 &&
-                   jogo.MediaGolsTotal >= 2 &&
-                   jogo.Time1.MediaGols > 1.9 &&
-                   jogo.Time2.MediaGols > 1.9)
-                {
-                    if (!_idContainerRepository.NotificacaoJaEnviada(jogo.IdJogoBet, "0.5", 1))
-                    {
-                        _telegramService.EnviaMensagemParaOGrupo(MensagemJogo(jogo, null, 0.5));
+            //    if (minutos >= 13 && minutos <= 22 &&
+            //       jogo.GolsTotal == 0 &&
+            //       jogo.UmOuOsDoisTimesTemJogosOversMenorQue5 &&
+            //       jogo.SomaOvers05 >= 8 &&
+            //       jogo.SomaOvers15 >= 7 &&
+            //       jogo.MediaGolsTotal >= 2 &&
+            //       jogo.Time1.MediaGols > 1.9 &&
+            //       jogo.Time2.MediaGols > 1.9)
+            //    {
+            //        if (!_idContainerRepository.NotificacaoJaEnviada(jogo.IdJogoBet, "0.5", 1))
+            //        {
+            //            _telegramService.EnviaMensagemParaOGrupo(MensagemJogo(jogo, null, 0.5));
 
-                        _idContainerRepository.SalvaEnvioDeNotificao(jogo.IdJogoBet, "0.5", 1);
-                        return;
-                    }
-                }
+            //            _idContainerRepository.SalvaEnvioDeNotificao(jogo.IdJogoBet, "0.5", 1);
+            //            return;
+            //        }
+            //    }
 
 
 
-                if (minutos >= 13 &&
-                    minutos <= 22 &&
-                    jogo.GolsTotal == 0 &&
-                    jogo.SomaOvers05 > 8 &&
-                    jogo.SomaOvers15 >= 7 &&
-                    jogo.MediaGolsTotal >= 2 &&
-                    jogo.Time1.MediaGols > 1.9 &&
-                    jogo.Time2.MediaGols > 1.9)
-                {
-                    if (!_idContainerRepository.NotificacaoJaEnviada(jogo.IdJogoBet, "0.5", 1))
-                    {
-                        _telegramService.EnviaMensagemParaOGrupo(MensagemJogo(jogo, null, 0.5));
+            //    if (minutos >= 13 &&
+            //        minutos <= 22 &&
+            //        jogo.GolsTotal == 0 &&
+            //        jogo.SomaOvers05 > 8 &&
+            //        jogo.SomaOvers15 >= 7 &&
+            //        jogo.MediaGolsTotal >= 2 &&
+            //        jogo.Time1.MediaGols > 1.9 &&
+            //        jogo.Time2.MediaGols > 1.9)
+            //    {
+            //        if (!_idContainerRepository.NotificacaoJaEnviada(jogo.IdJogoBet, "0.5", 1))
+            //        {
+            //            _telegramService.EnviaMensagemParaOGrupo(MensagemJogo(jogo, null, 0.5));
 
-                        _idContainerRepository.SalvaEnvioDeNotificao(jogo.IdJogoBet, "0.5", 1);
-                        return;
-                    }
-                }
+            //            _idContainerRepository.SalvaEnvioDeNotificao(jogo.IdJogoBet, "0.5", 1);
+            //            return;
+            //        }
+            //    }
 
-                if (jogo.GolsTotal == 1 &&
-                        minutos <= 8 &&
-                        jogo.MediaGolsTotal >= 2 &&
-                        jogo.Time1.MediaGols > 1.9 &&
-                        jogo.Time2.MediaGols > 1.9 &&
-                        jogo.SomaOvers15 >= 7)
-                {
-                    if (!_idContainerRepository.NotificacaoJaEnviada(jogo.IdJogoBet, "1.5", 1))
-                    {
-                        _telegramService.EnviaMensagemParaOGrupo(MensagemJogo(jogo, null, 1.5));
+            //    if (jogo.GolsTotal == 1 &&
+            //            minutos <= 8 &&
+            //            jogo.MediaGolsTotal >= 2 &&
+            //            jogo.Time1.MediaGols > 1.9 &&
+            //            jogo.Time2.MediaGols > 1.9 &&
+            //            jogo.SomaOvers15 >= 7)
+            //    {
+            //        if (!_idContainerRepository.NotificacaoJaEnviada(jogo.IdJogoBet, "1.5", 1))
+            //        {
+            //            _telegramService.EnviaMensagemParaOGrupo(MensagemJogo(jogo, null, 1.5));
 
-                        _idContainerRepository.SalvaEnvioDeNotificao(jogo.IdJogoBet, "1.5", 1);
-                        return;
-                    }
-                }
-            }
+            //            _idContainerRepository.SalvaEnvioDeNotificao(jogo.IdJogoBet, "1.5", 1);
+            //            return;
+            //        }
+            //    }
+            //}
 
-            if (minutos >= 60 &&
-                jogo.GolsTotal == 0 &&
-                jogo.UmOuOsDoisTimesTemJogosOversMenorQue5 &&
-                jogo.SomaOvers05 >= 8 &&
-                jogo.SomaOvers15 >= 7 &&
-                jogo.MediaGolsTotal >= 2 &&
-                jogo.Time1.MediaGols > 1.9 &&
-                jogo.Time2.MediaGols > 1.9)
-            {
-                if (!_idContainerRepository.NotificacaoJaEnviada(jogo.IdJogoBet, "0.5", 2))
-                {
-                    _telegramService.EnviaMensagemParaOGrupo(MensagemJogo(jogo, null, 0.5));
+            //if (minutos >= 60 &&
+            //    jogo.GolsTotal == 0 &&
+            //    jogo.UmOuOsDoisTimesTemJogosOversMenorQue5 &&
+            //    jogo.SomaOvers05 >= 8 &&
+            //    jogo.SomaOvers15 >= 7 &&
+            //    jogo.MediaGolsTotal >= 2 &&
+            //    jogo.Time1.MediaGols > 1.9 &&
+            //    jogo.Time2.MediaGols > 1.9)
+            //{
+            //    if (!_idContainerRepository.NotificacaoJaEnviada(jogo.IdJogoBet, "0.5", 2))
+            //    {
+            //        _telegramService.EnviaMensagemParaOGrupo(MensagemJogo(jogo, null, 0.5));
 
-                    _idContainerRepository.SalvaEnvioDeNotificao(jogo.IdJogoBet, "0.5", 2);
-                    return;
-                }
-            }
+            //        _idContainerRepository.SalvaEnvioDeNotificao(jogo.IdJogoBet, "0.5", 2);
+            //        return;
+            //    }
+            //}
 
-            if (minutos >= 60 &&
-                 jogo.GolsTotal == 0 &&
-                 jogo.SomaOvers05 > 8 &&
-                 jogo.SomaOvers15 >= 7 &&
-                 jogo.MediaGolsTotal >= 2 &&
-                 jogo.Time1.MediaGols > 1.9 &&
-                 jogo.Time2.MediaGols > 1.9)
-            {
-                if (!_idContainerRepository.NotificacaoJaEnviada(jogo.IdJogoBet, "0.5", 2))
-                {
-                    _telegramService.EnviaMensagemParaOGrupo(MensagemJogo(jogo, null, 0.5));
+            //if (minutos >= 60 &&
+            //     jogo.GolsTotal == 0 &&
+            //     jogo.SomaOvers05 > 8 &&
+            //     jogo.SomaOvers15 >= 7 &&
+            //     jogo.MediaGolsTotal >= 2 &&
+            //     jogo.Time1.MediaGols > 1.9 &&
+            //     jogo.Time2.MediaGols > 1.9)
+            //{
+            //    if (!_idContainerRepository.NotificacaoJaEnviada(jogo.IdJogoBet, "0.5", 2))
+            //    {
+            //        _telegramService.EnviaMensagemParaOGrupo(MensagemJogo(jogo, null, 0.5));
 
-                    _idContainerRepository.SalvaEnvioDeNotificao(jogo.IdJogoBet, "0.5", 2);
-                    return;
-                }
-            }
+            //        _idContainerRepository.SalvaEnvioDeNotificao(jogo.IdJogoBet, "0.5", 2);
+            //        return;
+            //    }
+            //}
 
-            if (minutos >= 60 &&
-                jogo.GolsTotal == 1 &&
-                jogo.MediaGolsTotal > 2.4 &&
-                jogo.Time1.MediaGols > 1.9 &&
-                jogo.Time2.MediaGols > 1.9 &&
-                jogo.SomaOvers15 >= 7)
-            {
-                if (!_idContainerRepository.NotificacaoJaEnviada(jogo.IdJogoBet, "1.5", 2))
-                {
-                    _telegramService.EnviaMensagemParaOGrupo(MensagemJogo(jogo, null, 1.5));
-                    _idContainerRepository.SalvaEnvioDeNotificao(jogo.IdJogoBet, "1.5", 2);
-                    return;
-                }
-            }
+            //if (minutos >= 60 &&
+            //    jogo.GolsTotal == 1 &&
+            //    jogo.MediaGolsTotal > 2.4 &&
+            //    jogo.Time1.MediaGols > 1.9 &&
+            //    jogo.Time2.MediaGols > 1.9 &&
+            //    jogo.SomaOvers15 >= 7)
+            //{
+            //    if (!_idContainerRepository.NotificacaoJaEnviada(jogo.IdJogoBet, "1.5", 2))
+            //    {
+            //        _telegramService.EnviaMensagemParaOGrupo(MensagemJogo(jogo, null, 1.5));
+            //        _idContainerRepository.SalvaEnvioDeNotificao(jogo.IdJogoBet, "1.5", 2);
+            //        return;
+            //    }
+            //}
 
-            if (jogo.GolsTotal == 2 && minutos >= 60)
-            {
-                if (jogo.SomaOvers25 >= 6 &&
-                    jogo.MediaGolsTotal >= 2.9 &&
-                    jogo.Time1.MediaGols > 2.4 &&
-                    jogo.Time2.MediaGols > 2.4)
-                {
-                    if (!_idContainerRepository.NotificacaoJaEnviada(jogo.IdJogoBet, "2.5", 1))
-                    {
-                        _telegramService.EnviaMensagemParaOGrupo(MensagemJogo(jogo, null, 2.5));
-                        _idContainerRepository.SalvaEnvioDeNotificao(jogo.IdJogoBet, "2.5", 1);
-                        return;
-                    }
-                }
-            }
+            //if (jogo.GolsTotal == 2 && minutos >= 60)
+            //{
+            //    if (jogo.SomaOvers25 >= 6 &&
+            //        jogo.MediaGolsTotal >= 2.9 &&
+            //        jogo.Time1.MediaGols > 2.4 &&
+            //        jogo.Time2.MediaGols > 2.4)
+            //    {
+            //        if (!_idContainerRepository.NotificacaoJaEnviada(jogo.IdJogoBet, "2.5", 1))
+            //        {
+            //            _telegramService.EnviaMensagemParaOGrupo(MensagemJogo(jogo, null, 2.5));
+            //            _idContainerRepository.SalvaEnvioDeNotificao(jogo.IdJogoBet, "2.5", 1);
+            //            return;
+            //        }
+            //    }
+            //}
 
-            int diferencaGols = jogo.GolsTime1 > jogo.GolsTime2 ? jogo.GolsTime1 - jogo.GolsTime2 : jogo.GolsTime2 - jogo.GolsTime1;
+            //int diferencaGols = jogo.GolsTime1 > jogo.GolsTime2 ? jogo.GolsTime1 - jogo.GolsTime2 : jogo.GolsTime2 - jogo.GolsTime1;
 
-            if (minutos >= 60 &&
-                jogo.GolsTotal > 2 &&
-                diferencaGols < 3)
-            {
-                if (jogo.SomaOvers25 > 6 &&
-                    jogo.MediaGolsTotal >= 2.9 &&
-                    jogo.Time1.MediaGols > 2.4 &&
-                    jogo.Time2.MediaGols > 2.4)
-                {
-                    if (!_idContainerRepository.NotificacaoJaEnviada(jogo.IdJogoBet, "3.5", 1))
-                    {
-                        _telegramService.EnviaMensagemParaOGrupo(MensagemJogo(jogo, null, 3.5));
-                        _idContainerRepository.SalvaEnvioDeNotificao(jogo.IdJogoBet, "3.5", 1);
-                        return;
-                    }
-                }
-            }
+            //if (minutos >= 60 &&
+            //    jogo.GolsTotal > 2 &&
+            //    diferencaGols < 3)
+            //{
+            //    if (jogo.SomaOvers25 > 6 &&
+            //        jogo.MediaGolsTotal >= 2.9 &&
+            //        jogo.Time1.MediaGols > 2.4 &&
+            //        jogo.Time2.MediaGols > 2.4)
+            //    {
+            //        if (!_idContainerRepository.NotificacaoJaEnviada(jogo.IdJogoBet, "3.5", 1))
+            //        {
+            //            _telegramService.EnviaMensagemParaOGrupo(MensagemJogo(jogo, null, 3.5));
+            //            _idContainerRepository.SalvaEnvioDeNotificao(jogo.IdJogoBet, "3.5", 1);
+            //            return;
+            //        }
+            //    }
+            //}
         }
     }
 }

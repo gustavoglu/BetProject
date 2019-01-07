@@ -19,11 +19,14 @@ namespace BetProject.ObjectValues
         public int Classificacao { get; set; } = 0;
         public int GolsSofridos { get; set; } = 0;
         public int GolsRealizados { get; set; } = 0;
+        public int GolsSofridosTotal { get; set; } = 0;
+        public int GolsRealizadosTotal { get; set; } = 0;
         public int Overs05 { get; set; } = 0;
         public int Overs15 { get; set; } = 0;
         public int Overs25 { get; set; } = 0;
         public bool UsouOversTotal { get; set; } = false;
         public int QtdJogos { get; set; }
+        public int QtdJogosTotal { get; set; }
         public int QtdTotalDeJogosOvers { get; set; }
     }
 }

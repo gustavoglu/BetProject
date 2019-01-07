@@ -74,9 +74,18 @@ namespace BetProject.Models
         public bool UmTimeFazMaisGolQueOOutro { get; set; } = false;
         public bool UmTimeSofreMaisGolQueOOutro { get; set; } = false;
         public bool UmTimeFazMaisGolEOutroSofreMaisGol { get; set; } = false;
+        public bool UmTimeFazMaisGolEOutroSofreMaisGolTotal { get; set; } = false;
         public bool UmaDasMaioresMediasDoDia { get; set; } = false;
         public bool UmOuOsDoisTimesTemJogosOversMenorQue5 { get; set; }
         public bool JogoComTimeComODobroDeGols { get; set; }
+        public bool Time1RealizaMaisGols_Total { get; set; }
+        public bool Time1SofreMaisGols_Total { get; set; }
+        public bool Time2RealizaMaisGols_Total { get; set; }
+        public bool Time2SofreMaisGols_Total { get; set; }
+        public bool Time1RealizaMaisGols_Casa { get; set; }
+        public bool Time1SofreMaisGols_Casa{ get; set; }
+        public bool Time2RealizaMaisGols_Fora { get; set; }
+        public bool Time2SofreMaisGols_Fora{ get; set; }
         public double MediaGolsTotal { get; set; }
         public int SomaOvers05 { get; set; } = 0;
         public int SomaOvers15 { get; set; } = 0;

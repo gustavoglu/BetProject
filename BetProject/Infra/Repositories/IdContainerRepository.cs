@@ -33,7 +33,6 @@ namespace BetProject.Infra.Repositories
         public bool NotificacaoJaEnviada(string idBet, string desc, int numero)
         {
             var idContainerHoje = TrazerIdContainerHoje();
-            Task.Delay(2000).GetAwaiter().GetResult();
             return idContainerHoje.Notificacoes.Exists(n => n.IdBet == idBet && n.Notificacao == desc && n.Numero == numero);
         }
 

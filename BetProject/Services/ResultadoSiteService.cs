@@ -115,13 +115,13 @@ namespace BetProject.Services
         {
             return idLi4.Contains("li-match-standings");
         }
-
+    
         public List<Jogo> ListaDeJogos(bool amanha = false)
         {
             var container = amanha ? _idContainerRepository.TrazerIdContainerAmanha() : _idContainerRepository.TrazerIdContainerHoje();
             var jogos = _jogoRepository.TrazJogosPorIds(container.Ids.Select(ji => ji.Id).ToArray());
          
-            var jogosFSOuDobro = jogos.Where(j => j.UmTimeFazMaisGolEOutroSofreMaisGol ).Distinct().ToList();
+            var jogosFSOuDobro = jogos.Where(j => j.UmTimeFazMaisGolEOutroSofreMaisGolTotal).Distinct().ToList();
 
             var top4IdsMedia = jogos.Where(j => !jogosFSOuDobro.Exists(fs => fs.IdJogoBet == j.IdJogoBet))
                                 .Distinct()

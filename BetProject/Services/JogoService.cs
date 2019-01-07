@@ -144,7 +144,6 @@ namespace BetProject.Services
 
         }
 
-
         public bool JogoSemJogosParaAnalise(string idBet)
         {
             try
@@ -337,6 +336,62 @@ namespace BetProject.Services
             }
         }
 
+        public static void AnalisaGolsTotal(Jogo jogo)
+        {
+            // Total
+            int time1_golsRealizados = jogo.Time1.AcimaAbaixo.Where(aa => aa.Tipo == EClassificacaoTipo.Total).ToList()[0].Overs[0].GolsRealizados;
+            int time1_golsSofridos = jogo.Time1.AcimaAbaixo.Where(aa => aa.Tipo == EClassificacaoTipo.Total).ToList()[0].Overs[0].GolsSofridos;
+            int time1_qtdJogos = jogo.Time1.AcimaAbaixo.Where(aa => aa.Tipo == EClassificacaoTipo.Total).ToList()[0].Overs[0].J;
+            int time2_golsRealizados = jogo.Time2.AcimaAbaixo.Where(aa => aa.Tipo == EClassificacaoTipo.Total).ToList()[0].Overs[0].GolsRealizados;
+            int time2_golsSofridos = jogo.Time2.AcimaAbaixo.Where(aa => aa.Tipo == EClassificacaoTipo.Total).ToList()[0].Overs[0].GolsSofridos;
+            int time2_qtdJogos = jogo.Time2.AcimaAbaixo.Where(aa => aa.Tipo == EClassificacaoTipo.Total).ToList()[0].Overs[0].J;
+
+            // Casa
+            int time1_golsRealizados_Casa = jogo.Time1.AcimaAbaixo.Where(aa => aa.Tipo == EClassificacaoTipo.Casa).ToList()[0].Overs[0].GolsRealizados;
+            int time1_golsSofridos_Casa = jogo.Time1.AcimaAbaixo.Where(aa => aa.Tipo == EClassificacaoTipo.Casa).ToList()[0].Overs[0].GolsSofridos;
+            int time1_qtdJogos_Casa = jogo.Time1.AcimaAbaixo.Where(aa => aa.Tipo == EClassificacaoTipo.Casa).ToList()[0].Overs[0].J;
+
+            // Fora
+            int time2_golsRealizados_Fora = jogo.Time2.AcimaAbaixo.Where(aa => aa.Tipo == EClassificacaoTipo.Fora).ToList()[0].Overs[0].GolsRealizados;
+            int time2_golsSofridos_Fora = jogo.Time2.AcimaAbaixo.Where(aa => aa.Tipo == EClassificacaoTipo.Fora).ToList()[0].Overs[0].GolsSofridos;
+            int time2_qtdJogos_Fora = jogo.Time2.AcimaAbaixo.Where(aa => aa.Tipo == EClassificacaoTipo.Fora).ToList()[0].Overs[0].J;
+
+            double time1_qtdAceitavel = (time1_qtdJogos * 0.4) + time1_qtdJogos;
+            double time2_qtdAceitavel = (time2_qtdJogos * 0.4) + time2_qtdJogos;
+
+            double time1_qtdAceitavel_Casa = (time1_qtdJogos_Casa * 0.4) + time1_qtdJogos_Casa;
+            double time2_qtdAceitavel_Fora = (time2_qtdJogos_Fora * 0.4) + time2_qtdJogos_Fora;
+
+            jogo.Time1SofreMaisGols_Total = time1_golsSofridos >= time1_qtdAceitavel;
+            jogo.Time1RealizaMaisGols_Total = time1_golsRealizados >= time1_qtdAceitavel;
+            jogo.Time2SofreMaisGols_Total = time2_golsSofridos >= time2_qtdAceitavel;
+            jogo.Time2RealizaMaisGols_Total = time2_golsRealizados >= time2_qtdAceitavel;
+
+            jogo.Time1SofreMaisGols_Casa = time1_golsSofridos_Casa >= time1_qtdAceitavel_Casa;
+            jogo.Time1RealizaMaisGols_Casa = time1_golsRealizados_Casa >= time1_qtdAceitavel_Casa;
+
+            jogo.Time2SofreMaisGols_Fora = time2_golsRealizados_Fora >= time2_qtdAceitavel_Fora;
+            jogo.Time2RealizaMaisGols_Fora = time2_golsRealizados_Fora >= time2_qtdAceitavel_Fora;
+
+            jogo.Time1.GolsRealizados = time1_golsRealizados_Casa;
+            jogo.Time1.GolsSofridos = time1_golsSofridos_Casa;
+            jogo.Time2.GolsRealizados = time2_golsRealizados_Fora;
+            jogo.Time2.GolsSofridos = time2_golsSofridos_Fora;
+
+            jogo.Time1.GolsRealizadosTotal = time1_golsRealizados;
+            jogo.Time1.GolsSofridosTotal = time1_golsSofridos;
+            jogo.Time2.GolsRealizadosTotal = time2_golsRealizados;
+            jogo.Time2.GolsSofridosTotal = time2_golsSofridos;
+
+            jogo.Time1.QtdJogosTotal = time1_qtdJogos;
+            jogo.Time2.QtdJogosTotal = time2_qtdJogos;
+            jogo.Time1.QtdJogos = time1_qtdJogos_Casa;
+            jogo.Time2.QtdJogos = time2_qtdJogos_Fora;
+
+            jogo.UmTimeFazMaisGolEOutroSofreMaisGol = jogo.Time1SofreMaisGols_Casa && jogo.Time2RealizaMaisGols_Fora || jogo.Time2SofreMaisGols_Fora && jogo.Time1RealizaMaisGols_Casa;
+            jogo.UmTimeFazMaisGolEOutroSofreMaisGolTotal = jogo.Time1SofreMaisGols_Total && jogo.Time2RealizaMaisGols_Total || jogo.Time2SofreMaisGols_Total && jogo.Time1RealizaMaisGols_Total;
+        }
+
         public void PreencheCamposAnaliseJogo(Jogo jogo)
         {
             var time1_05_15_25_Overs = jogo.Time1.AcimaAbaixo.Where(a => a.Tipo == EClassificacaoTipo.Casa)
@@ -426,6 +481,7 @@ namespace BetProject.Services
             jogo.Time2.QtdTotalDeJogosOvers = TimeHelper.GetQtdJogos(jogo.Time2, EClassificacaoTipo.Fora);
             jogo.UmOuOsDoisTimesTemJogosOversMenorQue5 = (jogo.Time1.QtdTotalDeJogosOvers < 5 || jogo.Time2.QtdTotalDeJogosOvers < 5);
             jogo.JogoComTimeComODobroDeGols = JogoValidations.JogoComTimeFazODobroDeGols(jogo);
+            AnalisaGolsTotal(jogo);
         }
     }
 }

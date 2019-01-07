@@ -23,7 +23,7 @@
         public int Overs { get; set; }
         public int Unders { get; set; }
         public int TotalUltimosJogos { get; set; }
-        int GolsSofridos { get; set; }
-        int GolsRealizados{ get; set; }
+        public int GolsSofridos { get; set; }
+        public int GolsRealizados{ get; set; }
     }
 }
