@@ -18,6 +18,7 @@ namespace BetProject.Services
         public List<IWebDriver> WebDriverCollectiont { get; set; }
         private readonly SeleniumConfiguration _configuration;
         private readonly TelegramService _telegramService;
+        private readonly IdContainerRepository _idContainerRepository;
         public PrincipalService()
         {
             var configuration = new ConfigurationBuilder()
@@ -31,6 +32,7 @@ namespace BetProject.Services
                     .Configure(seleniumConfigurations);
             _configuration = seleniumConfigurations;
             _telegramService = new TelegramService();
+            _idContainerRepository = new IdContainerRepository();
 
         }
 
@@ -89,27 +91,33 @@ namespace BetProject.Services
         {
             try
             {
+              
+
                 var rs = new ResultadoSiteService();
+                rs.ReanalisaJogosDeHoje(); return;
 
-                //IWebDriver wd1 = SeleniumHelper.CreateDefaultWebDriver(headless);
-                //IWebDriver wd2 = SeleniumHelper.CreateDefaultWebDriver(headless);
+                IWebDriver wd1 = SeleniumHelper.CreateDefaultWebDriver(headless);
+                IWebDriver wd2 = SeleniumHelper.CreateDefaultWebDriver(headless);
+          
+                ResultadoSiteService rs1 = new ResultadoSiteService(wd1);
+                ResultadoSiteService rs2 = new ResultadoSiteService(wd2);
 
-                //ResultadoSiteService rs1 = new ResultadoSiteService(wd1);
-                //ResultadoSiteService rs2 = new ResultadoSiteService(wd2);
-                //Console.WriteLine($"Salvando Jogos De Amanhã as {DateTime.Now}");
-                //Task.Factory.StartNew(async () =>
-                //{
-                //    await rs2.SalvaJogosDeHoje(false, wd2);
-                //});
+                var container = _idContainerRepository.TrazerIdContainerHoje();
+                if (container == null || !container.Ids.Any()) container =  await rs1.SalvaJogosIds();
 
-                //await Task.Delay(60000);
-                //await rs1.SalvaJogosDeHoje(true, wd1);
+                Console.WriteLine($"Salvando Jogos De Amanhã as {DateTime.Now}");
+                Task.Factory.StartNew(async () =>
+                {
+                    await rs2.SalvaJogosDeHoje(container,false, wd2);
+                });
 
-                //ResultadosSiteHelper.CarregandoJogos = false;
-                //wd1.Dispose();
-                //wd2.Dispose();
+                await rs1.SalvaJogosDeHoje(container,true, wd1);
 
-                //rs.ReanalisaJogosDeHoje(); return;
+                ResultadosSiteHelper.CarregandoJogos = false;
+                wd1.Dispose();
+                wd2.Dispose();
+
+                
                 await rs.StartAnaliseLive();
             }
             catch (Exception e)

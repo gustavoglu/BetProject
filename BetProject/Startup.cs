@@ -45,8 +45,8 @@ namespace BetProject
                 ts.EnviaMensagemParaOGrupo("App Iniciado");
 
                 
-                //ps.SalvaJogosAmanha(2).GetAwaiter().GetResult();
-                ps.Iniciar(2,true).GetAwaiter().GetResult();
+               // ps.SalvaJogosAmanha(2,false).GetAwaiter().GetResult();
+                ps.Iniciar(2,false).GetAwaiter().GetResult();
             }
             catch(Exception e)
             {
