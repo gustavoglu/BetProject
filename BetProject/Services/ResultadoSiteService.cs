@@ -126,6 +126,7 @@ namespace BetProject.Services
             var top4IdsMedia = jogos.Where(j => !jogosFSOuDobro.Exists(fs => fs.IdJogoBet == j.IdJogoBet))
                                 .Distinct()
                                 .OrderByDescending(j => j.MediaGolsTotal)
+                                .Where(j => j.MediaGolsTotal > 3)
                                 .Take(4).ToList();
 
             top4IdsMedia.ForEach(j => j.Observacoes = "Top 4 Media Jogos");
