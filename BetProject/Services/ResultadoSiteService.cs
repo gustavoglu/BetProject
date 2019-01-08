@@ -56,6 +56,7 @@ namespace BetProject.Services
             _jogoRepository = new JogoRepository();
             _jogoService = new JogoService(_driver);
             _analiseService = new AnaliseService();
+            _telegramService = new TelegramService();
         }
 
         private void NavegarParaSite(string site)
