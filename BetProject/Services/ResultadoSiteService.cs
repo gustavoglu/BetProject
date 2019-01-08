@@ -24,7 +24,7 @@ namespace BetProject.Services
         private readonly JogoRepository _jogoRepository;
         private JogoService _jogoService;
         private readonly AnaliseService _analiseService;
-
+        private readonly TelegramService _telegramService;
         public bool CarregandoJogos { get; set; } = false;
         public IWebDriver Driver { get { return _driver; } }
 
@@ -47,6 +47,7 @@ namespace BetProject.Services
             _jogoRepository = new JogoRepository();
             _jogoService = new JogoService(_driver);
             _analiseService = new AnaliseService();
+            _telegramService = new TelegramService();
         }
 
         public ResultadoSiteService()
@@ -584,7 +585,7 @@ namespace BetProject.Services
 
             if (depoisDasSete)
             {
-            
+                _telegramService.EnviaMensagemParaOGrupo($"Carregando Jogos de Amanhã {DateTime.Now.Date.AddDays(1)}");
                 IWebDriver wd1 = SeleniumHelper.CreateDefaultWebDriver(headless);
                 ResultadoSiteService rs1 = new ResultadoSiteService(wd1);
 
