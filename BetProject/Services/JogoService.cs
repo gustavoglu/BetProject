@@ -126,6 +126,12 @@ namespace BetProject.Services
 
             await PegaInfosClassficacao(idBet, times);
 
+            if(!jogo.Time1.Classificacoes.Any() || !jogo.Time2.Classificacoes.Any())
+            {
+                _idContainerRepository.IgnoraIdJogo(idBet);
+                return;
+            }
+
             await PegaInfosAcimaAbaixo(idBet, times, jogo.GolsTime1 + jogo.GolsTime2);
 
             PreencheCamposAnaliseJogo(jogo);
@@ -188,7 +194,7 @@ namespace BetProject.Services
             await Task.Delay(1000);
             _driver.FindElement(By.Id("tabitem-table")).Click();
             var tabelaClassificacaoTotal = _driver.FindElement(By.Id("table-type-1"));
-            CriaClassificacao(tabelaClassificacaoTotal, EClassificacaoTipo.Total, times);
+            bool result = CriaClassificacao(tabelaClassificacaoTotal, EClassificacaoTipo.Total, times);
 
         }
 
@@ -198,6 +204,14 @@ namespace BetProject.Services
             var trTimes = tabelaClassificacao.FindElements(By.ClassName("highlight"));
             foreach (var tr in trTimes)
             {
+                var empates = tr.FindElements(By.ClassName("form-d"));
+                var derrotas = tr.FindElements(By.ClassName("form-l"));
+                var vitorias = tr.FindElements(By.ClassName("form-w"));
+
+                var qtdJogos = empates.Count + derrotas.Count + vitorias.Count;
+
+                if (qtdJogos == 0) return false;
+
                 var nomeTime = tr.FindElement(By.ClassName("team_name_span"))
                                     .FindElement(By.TagName("a")).Text;
 
@@ -206,11 +220,7 @@ namespace BetProject.Services
 
                 var asTag = tr.FindElement(By.ClassName("form"))
                                 .FindElements(By.TagName("a"));
-                var empates = tr.FindElements(By.ClassName("form-d"));
-                var derrotas = tr.FindElements(By.ClassName("form-l"));
-                var vitorias = tr.FindElements(By.ClassName("form-w"));
-
-                var qtdJogos = empates.Count + derrotas.Count + vitorias.Count;
+               
 
                 Classificacao classif = new Classificacao(tipo, vitorias.Count, empates.Count, derrotas.Count, qtdJogos,
                                                             lugar, trsTotal.Count - 1, gols);

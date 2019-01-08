@@ -491,26 +491,22 @@ namespace BetProject.Services
             var idContainer = !amanha ? _idContainerRepository.TrazerIdContainerHoje() :
                                         _idContainerRepository.TrazerIdContainerAmanha();
 
-            var jogoId = idContainer.Ids.FirstOrDefault(i => i.Id == id) ??
-                         idContainer.IdsLive.FirstOrDefault(i => i.Id == id);
-
-            var jogo = _jogoRepository.TrazerJogoPorIdBet(jogoId.Id);
+            var jogo = _jogoRepository.TrazerJogoPorIdBet(id);
 
             if (jogo != null)
                 try
                 {
-                    if (jogo.Ignorar) return;
-                    _jogoService.AtualizaInformacoesBasicasJogo2(tr, jogo);
+                    await _jogoService.AtualizaInformacoesBasicasJogo(jogo);
                     _jogoService.PreencheCamposAnaliseJogo(jogo);
                     _jogoRepository.Salvar(jogo);
                 }
                 catch (Exception e)
                 {
-                    jogoId.ErrorMessage = e.Message;
-                    idContainer = amanha ? _idContainerRepository.TrazerIdContainerAmanha() : _idContainerRepository.TrazerIdContainerHoje();
-                    if (idContainer == null) idContainer = _idContainerRepository.TrazerIdContainerHoje();
-                    idContainer.IdsComErro.Add(jogoId);
-                    _idContainerRepository.Salvar(idContainer);
+                    //jogoId.ErrorMessage = e.Message;
+                    //idContainer = amanha ? _idContainerRepository.TrazerIdContainerAmanha() : _idContainerRepository.TrazerIdContainerHoje();
+                    //if (idContainer == null) idContainer = _idContainerRepository.TrazerIdContainerHoje();
+                    //idContainer.IdsComErro.Add(jogoId);
+                    //_idContainerRepository.Salvar(idContainer);
 
                 }
             else
@@ -520,11 +516,11 @@ namespace BetProject.Services
                 }
                 catch (Exception e)
                 {
-                    jogoId.ErrorMessage = e.Message;
-                    idContainer = amanha ? _idContainerRepository.TrazerIdContainerAmanha() : _idContainerRepository.TrazerIdContainerHoje();
-                    if (idContainer == null) idContainer = _idContainerRepository.TrazerIdContainerHoje();
-                    idContainer.IdsComErro.Add(jogoId);
-                    _idContainerRepository.Salvar(idContainer);
+                    //jogoId.ErrorMessage = e.Message;
+                    //idContainer = amanha ? _idContainerRepository.TrazerIdContainerAmanha() : _idContainerRepository.TrazerIdContainerHoje();
+                    //if (idContainer == null) idContainer = _idContainerRepository.TrazerIdContainerHoje();
+                    //idContainer.IdsComErro.Add(jogoId);
+                    //_idContainerRepository.Salvar(idContainer);
                 }
         }
 
