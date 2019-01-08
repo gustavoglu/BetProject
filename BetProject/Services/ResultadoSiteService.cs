@@ -592,10 +592,14 @@ namespace BetProject.Services
 
                 var container = _idContainerRepository.TrazerIdContainerAmanha();
                 if (container == null || !container.Ids.Any()) container = await rs1.SalvaJogosIds(true);
+                wd1.Dispose();
+                GC.Collect();
 
+                wd1 = SeleniumHelper.CreateDefaultWebDriver(headless);
                 IWebDriver wd2 = SeleniumHelper.CreateDefaultWebDriver(headless);
                 ResultadoSiteService rs2 = new ResultadoSiteService(wd2);
-                
+
+                await Task.Delay(5000);
                 Console.WriteLine($"Salvando Jogos De Amanhã as {DateTime.Now}");
                 Task.Factory.StartNew(async () =>
                 {
