@@ -138,7 +138,7 @@ namespace BetProject.Services
 
             jogosFT0560.ForEach(j => j.Observacoes = "0x0 FT 0.5");
 
-            var jogosConfirmados = jogos.Where(j => jogosFSOuDobro.Exists(i => i.Id == j.Id) || top4IdsMedia.Exists(i => i.Id == j.Id) || jogosFT0560.Exists(i => i.Id == j.Id)).ToList();
+            var jogosConfirmados = jogos.Where(j => jogosFSOuDobro.Exists(i => i.Id == j.Id) || top4IdsMedia.Exists(i => i.Id == j.Id) || jogosFT0560.Exists(i => i.Id == j.Id)).Distinct().ToList();
             return jogosConfirmados;
         }
 
