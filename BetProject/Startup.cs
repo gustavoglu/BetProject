@@ -46,6 +46,7 @@ namespace BetProject
 
                 
                // ps.SalvaJogosAmanha(2,false).GetAwaiter().GetResult();
+               
                 ps.Iniciar(2,false).GetAwaiter().GetResult();
             }
             catch(Exception e)

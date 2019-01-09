@@ -117,12 +117,12 @@ namespace BetProject.Services
         {
             return idLi4.Contains("li-match-standings");
         }
-    
+
         public List<Jogo> ListaDeJogos(bool amanha = false)
         {
             var container = amanha ? _idContainerRepository.TrazerIdContainerAmanha() : _idContainerRepository.TrazerIdContainerHoje();
             var jogos = _jogoRepository.TrazJogosPorIds(container.Ids.Select(ji => ji.Id).ToArray());
-         
+
             var jogosFSOuDobro = jogos.Where(j => j.UmTimeFazMaisGolEOutroSofreMaisGolTotal).Distinct().ToList();
 
             var top4IdsMedia = jogos.Where(j => !jogosFSOuDobro.Exists(fs => fs.IdJogoBet == j.IdJogoBet))
@@ -287,8 +287,8 @@ namespace BetProject.Services
             _idContainerRepository.Salvar(idContainerHoje);
             return idContainerHoje;
         }
-        
-        private async Task  VerificaJogosNãoCarregados(bool amanha = false)
+
+        private async Task VerificaJogosNãoCarregados(bool amanha = false)
         {
             NavegarParaSite(_configuration.Sites.Resultado.Principal);
 
@@ -383,7 +383,7 @@ namespace BetProject.Services
             return idContainer;
         }
 
-        public async Task SalvaJogosDeHoje(IdContainer container, bool descending = false,IWebDriver driver = null)
+        public async Task SalvaJogosDeHoje(IdContainer container, bool descending = false, IWebDriver driver = null)
         {
             Console.WriteLine($"Salvando Jogos De Hoje as {DateTime.Now}");
 
@@ -442,7 +442,7 @@ namespace BetProject.Services
             {
                 foreach (var i in ids) await CriarOuAtualizaInfosJogo(i.Id, true);
             }
-            catch
+            catch (Exception e)
             {
                 foreach (var i in ids) await CriarOuAtualizaInfosJogo(i.Id, true);
             }
@@ -567,6 +567,50 @@ namespace BetProject.Services
                 }
         }
 
+
+        public async Task CarregaJogosDeHoje(bool descending = false, bool headless = false)
+        {
+            while (ResultadosSiteHelper.CarregandoJogos)
+            {
+                await Task.Delay(400000);
+            }
+
+            _telegramService.EnviaMensagemParaOGrupo($"Carregando Jogos de Hoje {DateTime.Now.Date}");
+
+            var container = _idContainerRepository.TrazerIdContainerHoje();
+            if (container == null || !container.Ids.Any())
+            {
+                IWebDriver wd3 = SeleniumHelper.CreateDefaultWebDriver(headless);
+                ResultadoSiteService rs3 = new ResultadoSiteService(wd3);
+                container = await rs3.SalvaJogosIds();
+                wd3.Dispose();
+                GC.Collect();
+            }
+
+            IWebDriver wd1 = SeleniumHelper.CreateDefaultWebDriver(headless);
+            ResultadoSiteService rs1 = new ResultadoSiteService(wd1);
+            IWebDriver wd2 = SeleniumHelper.CreateDefaultWebDriver(headless);
+            ResultadoSiteService rs2 = new ResultadoSiteService(wd2);
+
+            await Task.Delay(5000);
+            Task.Factory.StartNew(async () =>
+            {
+                await rs2.SalvaJogosDeHoje(container, false, wd2);
+            });
+
+            await rs1.SalvaJogosDeHoje(container, true, wd1);
+
+            ResultadosSiteHelper.CarregandoJogos = false;
+
+            wd1.Dispose();
+            wd2.Dispose();
+
+           // await TentaCarregarJogosComErroHoje();
+
+        }
+
+
+
         public async Task CarregaJogosDeAmanha(bool descending = false, bool headless = false)
         {
             while (ResultadosSiteHelper.CarregandoJogos)
@@ -582,16 +626,21 @@ namespace BetProject.Services
 
             if (depoisDasSete)
             {
-                _telegramService.EnviaMensagemParaOGrupo($"Carregando Jogos de Amanhã {DateTime.Now.Date.AddDays(1)}");
-                IWebDriver wd1 = SeleniumHelper.CreateDefaultWebDriver(headless);
-                ResultadoSiteService rs1 = new ResultadoSiteService(wd1);
+                var data =  DateTime.Now.Date.AddDays(1).Date;
+                _telegramService.EnviaMensagemParaOGrupo($"Carregando Jogos de Amanhã {data}");
 
                 var container = _idContainerRepository.TrazerIdContainerAmanha();
-                if (container == null || !container.Ids.Any()) container = await rs1.SalvaJogosIds(true);
-                wd1.Dispose();
-                GC.Collect();
+                if (container == null || !container.Ids.Any())
+                {
+                    IWebDriver wd3 = SeleniumHelper.CreateDefaultWebDriver(headless);
+                    ResultadoSiteService rs3 = new ResultadoSiteService(wd3);
+                    container = await rs3.SalvaJogosIds(true);
+                    wd3.Dispose();
+                    GC.Collect();
+                }
 
-                wd1 = SeleniumHelper.CreateDefaultWebDriver(headless);
+                IWebDriver wd1 = SeleniumHelper.CreateDefaultWebDriver(headless);
+                ResultadoSiteService rs1 = new ResultadoSiteService(wd1);
                 IWebDriver wd2 = SeleniumHelper.CreateDefaultWebDriver(headless);
                 ResultadoSiteService rs2 = new ResultadoSiteService(wd2);
 
@@ -599,15 +648,20 @@ namespace BetProject.Services
                 Console.WriteLine($"Salvando Jogos De Amanhã as {DateTime.Now}");
                 Task.Factory.StartNew(async () =>
                 {
-                    await rs2.SalvaJogosDeAmanha(container,false, wd2);
+                    await rs2.SalvaJogosDeAmanha(container, false, wd2);
                 });
 
-                await rs1.SalvaJogosDeAmanha(container,true, wd1);
+                await rs1.SalvaJogosDeAmanha(container, true, wd1);
 
                 ResultadosSiteHelper.CarregandoJogos = false;
 
                 wd1.Dispose();
                 wd2.Dispose();
+
+                var jogos = _jogoRepository.TrazJogosPorIds(container.Ids.Select(ji => ji.Id).ToArray());
+                var jogosFSOuDobro = jogos.Where(j => j.UmTimeFazMaisGolEOutroSofreMaisGolTotal).Distinct().ToList();
+                var primeiroJogo = jogosFSOuDobro.OrderBy(p => p.DataInicio.TimeOfDay).FirstOrDefault();
+                _telegramService.EnviaMensagemParaOGrupo($"{jogosFSOuDobro.Count} serão analisados no dia  {data} com Inicio as {primeiroJogo.DataInicio.TimeOfDay}");
 
                 await TentaCarregarJogosComErroHoje();
             }
@@ -682,8 +736,8 @@ namespace BetProject.Services
 
         public void AtualizaJogosComErros(IdContainer container = null, bool amanha = false)
         {
-            container = container == null ? amanha ? _idContainerRepository.TrazerIdContainerAmanha() : 
-                                                     _idContainerRepository.TrazerIdContainerHoje() : 
+            container = container == null ? amanha ? _idContainerRepository.TrazerIdContainerAmanha() :
+                                                     _idContainerRepository.TrazerIdContainerHoje() :
                                                      container;
 
             JogoRepository jr = new JogoRepository();
@@ -704,7 +758,7 @@ namespace BetProject.Services
             while (true)
             {
                 GC.Collect(); ;
-                await CarregaJogosDeAmanha(descending,true);
+                await CarregaJogosDeAmanha(descending, true);
                 var jogos = ListaDeJogos().Where(i => TempoDiferencaJogo(i) > 1 && TempoDiferencaJogo(i) < 80).ToList();
                 if (!jogos.Any())
                 {

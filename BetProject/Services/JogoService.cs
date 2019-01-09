@@ -126,7 +126,7 @@ namespace BetProject.Services
 
             await PegaInfosClassficacao(idBet, times);
 
-            if(!jogo.Time1.Classificacoes.Any() || !jogo.Time2.Classificacoes.Any())
+            if (!jogo.Time1.Classificacoes.Any() || !jogo.Time2.Classificacoes.Any())
             {
                 _idContainerRepository.IgnoraIdJogo(idBet);
                 return;
