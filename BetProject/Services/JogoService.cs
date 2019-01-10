@@ -210,7 +210,7 @@ namespace BetProject.Services
 
                 var qtdJogos = empates.Count + derrotas.Count + vitorias.Count;
 
-                if (qtdJogos == 0) return false;
+                if (qtdJogos < 4) return false;
 
                 var nomeTime = tr.FindElement(By.ClassName("team_name_span"))
                                     .FindElement(By.TagName("a")).Text;

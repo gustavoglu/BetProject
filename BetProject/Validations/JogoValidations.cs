@@ -55,6 +55,11 @@ namespace BetProject.Validations
             return time1FazMaisGols && time2SofreMaisGols || time2FazMaisGols && time1SofreMaisGols;
         }
 
+        public bool JogoComTimesQueFazemPoucosGolsESofremPoucosGolsTotal(Jogo jogo)
+        {
+            return !jogo.Time1SofreMaisGols_Total && !jogo.Time1SofreMaisGols_Total && !jogo.Time1RealizaMaisGols_Total && !jogo.Time2RealizaMaisGols_Total;
+        }
+
         public static bool OsDoisTimesFazemPoucosGols(Jogo jogo)
         {
             var time1_05_15_25_OversTotal = jogo.Time1.AcimaAbaixo

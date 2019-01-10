@@ -90,9 +90,23 @@ namespace BetProject.Services
 
         private void ExpandiTodasTabelas()
         {
-            var expandLeagueLink = _driver.FindElements(By.ClassName("expand-league-link")).ToList();
+            //var expandLeagueLink = _driver.FindElements(By.ClassName("expand-league-link")).ToList();
+            //var expandLeagueLink = _driver.FindElements(By.ClassName("collapse-league")).ToList();
+           
+            //if (!expandLeagueLink.Any()) return;
+            //expandLeagueLink.ForEach(e => e.Click());
+
+
+            var expandLeagueLink = _driver.FindElements(By.ClassName("expand-league")).ToList();
             if (!expandLeagueLink.Any()) return;
-            expandLeagueLink.ForEach(e => e.Click());
+            int count = expandLeagueLink.Count - 1;
+            while (count >= 0)
+            {
+                var e = expandLeagueLink[count];
+
+                e.Click();
+                count--;
+            }
         }
 
         private bool ApostaBet(IWebElement tr)
@@ -592,7 +606,6 @@ namespace BetProject.Services
             IWebDriver wd2 = SeleniumHelper.CreateDefaultWebDriver(headless);
             ResultadoSiteService rs2 = new ResultadoSiteService(wd2);
 
-            await Task.Delay(5000);
             Task.Factory.StartNew(async () =>
             {
                 await rs2.SalvaJogosDeHoje(container, false, wd2);
@@ -605,13 +618,17 @@ namespace BetProject.Services
             wd1.Dispose();
             wd2.Dispose();
 
-           // await TentaCarregarJogosComErroHoje();
+            var jogos = _jogoRepository.TrazJogosPorIds(container.Ids.Select(ji => ji.Id).ToArray());
+            var jogosFSOuDobro = jogos.Where(j => j.UmTimeFazMaisGolEOutroSofreMaisGolTotal).Distinct().ToList();
+            var primeiroJogo = jogosFSOuDobro.OrderBy(p => p.DataInicio.TimeOfDay).FirstOrDefault();
+            _telegramService.EnviaMensagemParaOGrupo($"{jogosFSOuDobro.Count} jogo(s) sera(ão) analisado(s) dia {DateTime.Now.Date} com Inicio as {primeiroJogo.DataInicio.TimeOfDay}");
+            // await TentaCarregarJogosComErroHoje();
 
         }
 
 
 
-        public async Task CarregaJogosDeAmanha(bool descending = false, bool headless = false)
+        public async Task CarregaJogosDeAmanha(bool descending = false, bool headless = false, bool ignorarHorario = false)
         {
             while (ResultadosSiteHelper.CarregandoJogos)
             {
@@ -620,11 +637,11 @@ namespace BetProject.Services
 
             var idContainer = _idContainerRepository.TrazerIdContainerAmanha();
 
-            if (idContainer != null) return;
+            if (idContainer != null && !ignorarHorario) return;
 
             bool depoisDasSete = DateTime.Now >= new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 19, 00, 00);
 
-            if (depoisDasSete)
+            if (depoisDasSete || ignorarHorario)
             {
                 var data =  DateTime.Now.Date.AddDays(1).Date;
                 _telegramService.EnviaMensagemParaOGrupo($"Carregando Jogos de Amanhã {data}");
@@ -661,7 +678,7 @@ namespace BetProject.Services
                 var jogos = _jogoRepository.TrazJogosPorIds(container.Ids.Select(ji => ji.Id).ToArray());
                 var jogosFSOuDobro = jogos.Where(j => j.UmTimeFazMaisGolEOutroSofreMaisGolTotal).Distinct().ToList();
                 var primeiroJogo = jogosFSOuDobro.OrderBy(p => p.DataInicio.TimeOfDay).FirstOrDefault();
-                _telegramService.EnviaMensagemParaOGrupo($"{jogosFSOuDobro.Count} serão analisados no dia  {data} com Inicio as {primeiroJogo.DataInicio.TimeOfDay}");
+                _telegramService.EnviaMensagemParaOGrupo($"{jogosFSOuDobro.Count} jogo(s) sera(ão) analisado(s) dia {data} com Inicio as {primeiroJogo.DataInicio.TimeOfDay}");
 
                 await TentaCarregarJogosComErroHoje();
             }
@@ -730,7 +747,7 @@ namespace BetProject.Services
         {
             var diferenca = DateTime.Now.Date > j.DataInicio.Date ? (DateTime.Now - j.DataInicio.AddDays(1)).TotalMinutes :
                                     (DateTime.Now - j.DataInicio).TotalMinutes;
-            diferenca = diferenca > 60 ? diferenca - 18 : diferenca;
+            diferenca = diferenca >= 60 ? diferenca - 15 : diferenca;
             return Math.Ceiling(diferenca);
         }
 
