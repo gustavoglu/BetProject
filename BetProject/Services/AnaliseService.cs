@@ -151,8 +151,9 @@ namespace BetProject.Services
             bool ft05_0x0 = jogo.Observacoes == "0x0 FT 0.5";
             bool timesMornos = !jogo.Time1SofreMaisGols_Total && !jogo.Time2SofreMaisGols_Total && !jogo.Time1RealizaMaisGols_Total && !jogo.Time2RealizaMaisGols_Total;
             bool osDoisTimesFazemGols = jogo.Time1RealizaMaisGols_Total && jogo.Time2RealizaMaisGols_Total;
+            bool umDosTimesNaoFazGolsENaoSofreGols = !jogo.Time1RealizaMaisGols_Total && !jogo.Time1SofreMaisGols_Total || !jogo.Time2RealizaMaisGols_Total && !jogo.Time2SofreMaisGols_Total;
 
-            if (minutos >= 60 && jogo.GolsTotal == 0 && validacaoBasica05 && ft05_0x0 && osDoisTimesFazemGols && !timesMornos) { EnviaNotificacao(jogo, 0.5, "0.5", 3); return; }
+            if (minutos >= 60 && jogo.GolsTotal == 0 && validacaoBasica05 && ft05_0x0 && osDoisTimesFazemGols && !timesMornos && !umDosTimesNaoFazGolsENaoSofreGols) { EnviaNotificacao(jogo, 0.5, "0.5", 3); return; }
             if (minutos >= 60 && jogo.GolsTotal == 0 && validacaoBasica05) { EnviaNotificacao(jogo, 0.5, "0.5", 2); return; };
             if (minutos >= 60 && jogo.GolsTotal == 1 && validacaoBasica15) { EnviaNotificacao(jogo, 1.5, "1.5", 2); return; };
             if (minutos >= 60 && jogo.GolsTotal > 2 && validacaoBasica35) { EnviaNotificacao(jogo, 2.5, "2.5", 1); return; };
