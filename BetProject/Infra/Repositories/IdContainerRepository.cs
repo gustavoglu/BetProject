@@ -22,6 +22,14 @@ namespace BetProject.Infra.Repositories
 
         }
 
+
+        public IdContainer TrazerPorId(string id)
+        {
+            using (var s = context.DocumentStore.OpenSession())
+                return s.Load<IdContainer>(id);
+
+        }
+
         public void SalvaEnvioDeNotificao(string idBet, string desc, int numero)
         {
 

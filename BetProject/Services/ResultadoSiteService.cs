@@ -454,11 +454,11 @@ namespace BetProject.Services
 
             try
             {
-                foreach (var i in ids) await CriarOuAtualizaInfosJogo(i.Id, true);
+                foreach (var i in ids) await CriarOuAtualizaInfosJogo(i.Id,container.Id, true);
             }
             catch (Exception e)
             {
-                foreach (var i in ids) await CriarOuAtualizaInfosJogo(i.Id, true);
+                foreach (var i in ids) await CriarOuAtualizaInfosJogo(i.Id, container.Id, true);
             }
 
             ResultadosSiteHelper.CarregandoJogos = false;
@@ -535,6 +535,46 @@ namespace BetProject.Services
                     //if (idContainer == null) idContainer = _idContainerRepository.TrazerIdContainerHoje();
                     //idContainer.IdsComErro.Add(jogoId);
                     //_idContainerRepository.Salvar(idContainer);
+                }
+        }
+
+        public async Task CriarOuAtualizaInfosJogo(string id, string idContainerId ,bool amanha = false, bool ignorar = true)
+        {
+            Console.WriteLine($"Criando ou Atualizando ID: {id} as {DateTime.Now}");
+            var idContainer = _idContainerRepository.TrazerPorId(idContainerId);
+
+            var jogoId = idContainer.Ids.FirstOrDefault(i => i.Id == id) ??
+                         idContainer.IdsLive.FirstOrDefault(i => i.Id == id);
+
+            var jogo = _jogoRepository.TrazerJogoPorIdBet(jogoId.Id);
+
+            if (jogo != null)
+                try
+                {
+                    if (jogo.Ignorar && ignorar) return;
+                    await _jogoService.AtualizaInformacoesBasicasJogo(jogo);
+                    _jogoService.PreencheCamposAnaliseJogo(jogo);
+                    _jogoRepository.Salvar(jogo);
+                }
+                catch (Exception e)
+                {
+                    jogoId.ErrorMessage = e.Message;
+                    idContainer = _idContainerRepository.TrazerPorId(idContainerId);
+                    idContainer.IdsComErro.Add(jogoId);
+                    _idContainerRepository.Salvar(idContainer);
+
+                }
+            else
+                try
+                {
+                    await _jogoService.CriaNovoJogo(id);
+                }
+                catch (Exception e)
+                {
+                    jogoId.ErrorMessage = e.Message;
+                    idContainer = _idContainerRepository.TrazerPorId(idContainerId);
+                    idContainer.IdsComErro.Add(jogoId);
+                    _idContainerRepository.Salvar(idContainer);
                 }
         }
 
