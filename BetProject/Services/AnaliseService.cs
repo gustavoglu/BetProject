@@ -129,7 +129,7 @@ namespace BetProject.Services
 
         public void AnalisaHT(Jogo jogo)
         {
-            int minutos = JogoHelper.ConvertMinutos(jogo.Minutos);
+            int minutos = int.Parse(jogo.Minutos);
             bool validacaoBasica05 = ValidacaoBasica05(jogo);
             bool validacaoBasica15 = ValidacaoBasica15(jogo);
 
