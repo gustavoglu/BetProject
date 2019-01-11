@@ -34,12 +34,13 @@ namespace BetProject.Services
                                                                 $"Gols Total Placar: {jogo.GolsTotal}\n" +
                                                                 $"Média Gols: {jogo.Time1.MediaGols} / {jogo.Time2.MediaGols} | {jogo.MediaGolsTotal}\n" +
                                                                 $"Gols: {jogo.Time1.Gols} / {jogo.Time2.Gols}\n" +
+                                                                $"Gols Total: {jogo.Time1.GolsRealizadosTotal}:{jogo.Time1.GolsSofridos} /  {jogo.Time2.GolsRealizadosTotal}:{jogo.Time2.GolsSofridos}\n" +
                                                                 $"Overs 0.5: {jogo.Time1.Overs05} / {jogo.Time2.Overs05} | {jogo.SomaOvers05}\n" +
                                                                 $"Overs 1.5: {jogo.Time1.Overs15} / {jogo.Time2.Overs15} | {jogo.SomaOvers15}\n" +
                                                                 $"Overs 2.5: {jogo.Time1.Overs25} / {jogo.Time2.Overs25} | {jogo.SomaOvers25}\n" +
                                                                 $"Soma Overs: {jogo.SomaTotalOvers}\n" +
-                                                                $"Class: {jogo.Time1.Classificacao} / {jogo.Time2.Classificacao} de {jogo.ClassificaoTotal}\n " +
-                                                                $"Classif. Perto : {jogo.ClassifPerto}\n " +
+                                                                $"Class: {jogo.Time1.Classificacao} / {jogo.Time2.Classificacao} de {jogo.ClassificaoTotal}\n" +
+                                                                $"Classif. Perto : {jogo.ClassifPerto}\n" +
                                                                 $"Gols Irregulares: {jogo.GolsIrregulares}\n" +
                                                                 $"Os dois times fazem poucos gols: { jogo.OsDoisTimesSofremGols}\n" +
                                                                 $"Um Time Faz mais Gols e outro Sofre Mais Gols: { jogo.UmTimeFazMaisGolEOutroSofreMaisGol }\n" +
@@ -140,7 +141,7 @@ namespace BetProject.Services
 
         public void AnalisaFT(Jogo jogo)
         {
-            int minutos = JogoHelper.ConvertMinutos(jogo.Minutos);
+            int minutos = int.Parse(jogo.Minutos);
             if (minutos < 60 || minutos > 75) return;
 
             bool validacaoBasica05 = ValidacaoBasica05(jogo);
@@ -153,7 +154,13 @@ namespace BetProject.Services
             bool osDoisTimesFazemGols = jogo.Time1RealizaMaisGols_Total && jogo.Time2RealizaMaisGols_Total;
             bool umDosTimesNaoFazGolsENaoSofreGols = !jogo.Time1RealizaMaisGols_Total && !jogo.Time1SofreMaisGols_Total || !jogo.Time2RealizaMaisGols_Total && !jogo.Time2SofreMaisGols_Total;
 
-            if (minutos >= 60 && jogo.GolsTotal == 0 && validacaoBasica05 && ft05_0x0 && osDoisTimesFazemGols && !timesMornos && !umDosTimesNaoFazGolsENaoSofreGols) { EnviaNotificacao(jogo, 0.5, "0.5", 3); return; }
+            if (minutos >= 60 && 
+                jogo.GolsTotal == 0 && 
+                validacaoBasica05 && 
+                ft05_0x0 && 
+                osDoisTimesFazemGols && 
+                !timesMornos && 
+                !umDosTimesNaoFazGolsENaoSofreGols) { EnviaNotificacao(jogo, 0.5, "0.5", 3); return; }
             if (minutos >= 60 && jogo.GolsTotal == 0 && validacaoBasica05) { EnviaNotificacao(jogo, 0.5, "0.5", 2); return; };
             if (minutos >= 60 && jogo.GolsTotal == 1 && validacaoBasica15) { EnviaNotificacao(jogo, 1.5, "1.5", 2); return; };
             if (minutos >= 60 && jogo.GolsTotal > 2 && validacaoBasica35) { EnviaNotificacao(jogo, 2.5, "2.5", 1); return; };

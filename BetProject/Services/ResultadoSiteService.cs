@@ -785,8 +785,7 @@ namespace BetProject.Services
 
         double TempoDiferencaJogo(Jogo j)
         {
-            var diferenca = DateTime.Now.Date > j.DataInicio.Date ? (DateTime.Now - j.DataInicio.AddDays(1)).TotalMinutes :
-                                    (DateTime.Now - j.DataInicio).TotalMinutes;
+            var diferenca = (DateTime.Now - j.DataInicio).TotalMinutes;
             diferenca = diferenca >= 60 ? diferenca - 15 : diferenca;
             return Math.Ceiling(diferenca);
         }
@@ -825,7 +824,16 @@ namespace BetProject.Services
 
                 if (jogos.Any())
                 {
-                    this._driver = SeleniumHelper.CreateDefaultWebDriver(true);
+                    if (jogos.Count > 5)
+                    {
+                        if (this._driver != null)
+                        {
+                            this._driver.Dispose();
+                            this._driver = SeleniumHelper.CreateDefaultWebDriver(true);
+                        }
+                    }
+
+                    if(this._driver == null) this._driver = SeleniumHelper.CreateDefaultWebDriver(true);
                     _jogoService = new JogoService(_driver);
                     foreach (var i in jogos)
                     {
@@ -855,7 +863,6 @@ namespace BetProject.Services
                         }
 
                     }
-                    _driver.Dispose();
                 }
             }
         }
