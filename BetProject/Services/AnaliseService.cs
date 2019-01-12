@@ -52,7 +52,31 @@ namespace BetProject.Services
 
         public void AnalisaMediaGolsMenorQue25_2(Jogo jogo)
         {
+            bool jogosLigaOvers = jogo.Liga.Contains("INGLATERRA:");
+
+            if (jogosLigaOvers) return;
             if (jogo.UmTimeFazMaisGolEOutroSofreMaisGolTotal) return;
+            if (jogo.Time1SofreMaisGols_Total && jogo.Time2SofreMaisGols_Total) return;
+
+            bool timesComODobroDeGolsRealizados = jogo.Time1.GolsRealizadosTotal >= (jogo.Time1.QtdJogosTotal * 2) || jogo.Time2.GolsRealizadosTotal >= (jogo.Time2.QtdJogosTotal * 2);
+            bool timesComODobroDeGolsSofridos = jogo.Time1.GolsSofridosTotal >= (jogo.Time1.QtdJogosTotal * 2) || jogo.Time2.GolsSofridosTotal >= (jogo.Time2.QtdJogosTotal * 2);
+
+            bool qtdGolsRealizadosAcimaDoLimiteTime1 = jogo.Time1.GolsRealizadosTotal / jogo.Time1.QtdJogosTotal >= 1.8;
+            bool qtdGolsRealizadosAcimaDoLimiteTime2 = jogo.Time2.GolsRealizadosTotal / jogo.Time2.QtdJogosTotal >= 1.8;
+            bool qtdGolsSofridosAcimaDoLimiteTime1 = jogo.Time1.GolsSofridosTotal / jogo.Time1.QtdJogosTotal >= 1.8;
+            bool qtdGolsSofridosAcimaDoLimiteTime2 = jogo.Time2.GolsSofridosTotal / jogo.Time2.QtdJogosTotal >= 1.8;
+
+            if (qtdGolsRealizadosAcimaDoLimiteTime1 || qtdGolsRealizadosAcimaDoLimiteTime2 || qtdGolsSofridosAcimaDoLimiteTime1 || qtdGolsSofridosAcimaDoLimiteTime2) return;
+
+            if (timesComODobroDeGolsRealizados || timesComODobroDeGolsSofridos) return;
+
+            bool time1FazMaisGols = jogo.Time1.GolsRealizadosTotal >= ((jogo.Time1.QtdJogosTotal * 0.4) + jogo.Time1.QtdJogosTotal);
+            bool time2FazMaisGols = jogo.Time2.GolsRealizadosTotal >= ((jogo.Time2.QtdJogosTotal * 0.4) + jogo.Time2.QtdJogosTotal);
+            bool time1FazPoucosGols = jogo.Time1.GolsSofridosTotal >= ((jogo.Time1.QtdJogosTotal * 0.3) + jogo.Time1.QtdJogosTotal);
+            bool time2FazPoucosGols = jogo.Time2.GolsSofridosTotal >= ((jogo.Time2.QtdJogosTotal * 0.3) + jogo.Time2.QtdJogosTotal);
+            
+   
+
             if (jogo.UmTimeFazMaisGolEOutroSofreMaisGolTotal)
                 if (!jogo.Time1RealizaMaisGols_Total &&
                     !jogo.Time2RealizaMaisGols_Total &&
@@ -63,17 +87,15 @@ namespace BetProject.Services
                     return;
                 }
 
-            int count = 0;
-            if (!jogo.Time1RealizaMaisGols_Total) count++;
-            if (!jogo.Time2RealizaMaisGols_Total) count++;
-            if (!jogo.Time1SofreMaisGols_Total) count++;
-            if (!jogo.Time2SofreMaisGols_Total) count++;
+            bool qtdAceitavelGolsSofridosTime1 = jogo.Time1.GolsSofridos >= (jogo.Time1.QtdJogosTotal * 0.25);
+            bool qtdAceitavelGolsSofridosTime2 = jogo.Time2.GolsSofridos >= (jogo.Time2.QtdJogosTotal * 0.25);
 
-            if (count >= 3)
+            if (jogo.Time1RealizaMaisGols_Total && qtdAceitavelGolsSofridosTime2 || jogo.Time2RealizaMaisGols_Total && qtdAceitavelGolsSofridosTime1)
             {
                 _telegramService.EnviaMensagemParaOGrupo(MensagemJogo(jogo, "UNDER"), true);
                 return;
             }
+
         }
 
 

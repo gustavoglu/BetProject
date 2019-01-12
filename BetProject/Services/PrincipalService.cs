@@ -93,6 +93,8 @@ namespace BetProject.Services
             {
 
                 var rs = new ResultadoSiteService();
+                rs.ReanalisaJogosDeHoje();
+                return;
                 await rs.StartAnaliseLive();
             }
             catch (Exception e)
