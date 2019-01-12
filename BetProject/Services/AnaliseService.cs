@@ -33,8 +33,8 @@ namespace BetProject.Services
                                                                 $"Placar: {jogo.GolsTime1} x {jogo.GolsTime2}\n" +
                                                                 $"Gols Total Placar: {jogo.GolsTotal}\n" +
                                                                 $"Média Gols: {jogo.Time1.MediaGols} / {jogo.Time2.MediaGols} | {jogo.MediaGolsTotal}\n" +
-                                                                $"Gols: {jogo.Time1.QtdJogos} - {jogo.Time1.Gols} /{jogo.Time2.QtdJogos} - {jogo.Time2.Gols}\n" +
-                                                                $"Gols Total:{jogo.Time1.QtdJogosTotal} - {jogo.Time1.GolsRealizadosTotal}:{jogo.Time1.GolsSofridosTotal} / {jogo.Time2.QtdJogosTotal} -  {jogo.Time2.GolsRealizadosTotal}:{jogo.Time2.GolsSofridosTotal}\n" +
+                                                                $"Gols: {jogo.Time1.QtdJogos} - {jogo.Time1.Gols} / {jogo.Time2.QtdJogos} - {jogo.Time2.Gols}\n" +
+                                                                $"Gols Total: {jogo.Time1.QtdJogosTotal} - {jogo.Time1.GolsRealizadosTotal}:{jogo.Time1.GolsSofridosTotal} / {jogo.Time2.QtdJogosTotal} -  {jogo.Time2.GolsRealizadosTotal}:{jogo.Time2.GolsSofridosTotal}\n" +
                                                                 $"Overs 0.5: {jogo.Time1.Overs05} / {jogo.Time2.Overs05} | {jogo.SomaOvers05}\n" +
                                                                 $"Overs 1.5: {jogo.Time1.Overs15} / {jogo.Time2.Overs15} | {jogo.SomaOvers15}\n" +
                                                                 $"Overs 2.5: {jogo.Time1.Overs25} / {jogo.Time2.Overs25} | {jogo.SomaOvers25}\n" +
