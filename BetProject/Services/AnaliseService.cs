@@ -52,14 +52,16 @@ namespace BetProject.Services
 
         public void AnalisaMediaGolsMenorQue25_2(Jogo jogo)
         {
-            if (!jogo.Time1RealizaMaisGols_Total &&
-                !jogo.Time2RealizaMaisGols_Total &&
-                !jogo.Time1SofreMaisGols_Total &&
-                !jogo.Time2SofreMaisGols_Total)
-            {
-                _telegramService.EnviaMensagemParaOGrupo(MensagemJogo(jogo, "UNDER"), true);
-                return;
-            }
+            if (jogo.UmTimeFazMaisGolEOutroSofreMaisGolTotal) return;
+            if (jogo.UmTimeFazMaisGolEOutroSofreMaisGolTotal)
+                if (!jogo.Time1RealizaMaisGols_Total &&
+                    !jogo.Time2RealizaMaisGols_Total &&
+                    !jogo.Time1SofreMaisGols_Total &&
+                    !jogo.Time2SofreMaisGols_Total)
+                {
+                    _telegramService.EnviaMensagemParaOGrupo(MensagemJogo(jogo, "UNDER"), true);
+                    return;
+                }
 
             int count = 0;
             if (!jogo.Time1RealizaMaisGols_Total) count++;
