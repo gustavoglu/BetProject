@@ -143,6 +143,7 @@ namespace BetProject.Services
             }
 
             _analiseService.AnalisaMediaGolsMenorQue25(jogo);
+            _analiseService.AnalisaMediaGolsMenorQue25_2(jogo);
             _analiseService.AnalisaSeMelhorJogo(jogo);
             _jogoRepository.Salvar(jogo);
 

@@ -33,8 +33,8 @@ namespace BetProject.Services
                                                                 $"Placar: {jogo.GolsTime1} x {jogo.GolsTime2}\n" +
                                                                 $"Gols Total Placar: {jogo.GolsTotal}\n" +
                                                                 $"Média Gols: {jogo.Time1.MediaGols} / {jogo.Time2.MediaGols} | {jogo.MediaGolsTotal}\n" +
-                                                                $"Gols: {jogo.Time1.Gols} / {jogo.Time2.Gols}\n" +
-                                                                $"Gols Total: {jogo.Time1.GolsRealizadosTotal}:{jogo.Time1.GolsSofridos} /  {jogo.Time2.GolsRealizadosTotal}:{jogo.Time2.GolsSofridos}\n" +
+                                                                $"Gols: {jogo.Time1.QtdJogos} - {jogo.Time1.Gols} /{jogo.Time2.QtdJogos} - {jogo.Time2.Gols}\n" +
+                                                                $"Gols Total:{jogo.Time1.QtdJogosTotal} - {jogo.Time1.GolsRealizadosTotal}:{jogo.Time1.GolsSofridosTotal} / {jogo.Time2.QtdJogosTotal} -  {jogo.Time2.GolsRealizadosTotal}:{jogo.Time2.GolsSofridosTotal}\n" +
                                                                 $"Overs 0.5: {jogo.Time1.Overs05} / {jogo.Time2.Overs05} | {jogo.SomaOvers05}\n" +
                                                                 $"Overs 1.5: {jogo.Time1.Overs15} / {jogo.Time2.Overs15} | {jogo.SomaOvers15}\n" +
                                                                 $"Overs 2.5: {jogo.Time1.Overs25} / {jogo.Time2.Overs25} | {jogo.SomaOvers25}\n" +
@@ -49,6 +49,32 @@ namespace BetProject.Services
                                                                 $"Boa Aposta\n" +
                                                                 jogo.LinkResultados;
         }
+
+        public void AnalisaMediaGolsMenorQue25_2(Jogo jogo)
+        {
+            if (!jogo.Time1RealizaMaisGols_Total &&
+                !jogo.Time2RealizaMaisGols_Total &&
+                !jogo.Time1SofreMaisGols_Total &&
+                !jogo.Time2SofreMaisGols_Total)
+            {
+                _telegramService.EnviaMensagemParaOGrupo(MensagemJogo(jogo, "UNDER"), true);
+                return;
+            }
+
+            int count = 0;
+            if (!jogo.Time1RealizaMaisGols_Total) count++;
+            if (!jogo.Time2RealizaMaisGols_Total) count++;
+            if (!jogo.Time1SofreMaisGols_Total) count++;
+            if (!jogo.Time2SofreMaisGols_Total) count++;
+
+            if (count >= 3)
+            {
+                _telegramService.EnviaMensagemParaOGrupo(MensagemJogo(jogo, "UNDER"), true);
+                return;
+            }
+        }
+
+
 
         public void AnalisaMediaGolsMenorQue25(Jogo jogo)
         {
@@ -154,12 +180,12 @@ namespace BetProject.Services
             bool osDoisTimesFazemGols = jogo.Time1RealizaMaisGols_Total && jogo.Time2RealizaMaisGols_Total;
             bool umDosTimesNaoFazGolsENaoSofreGols = !jogo.Time1RealizaMaisGols_Total && !jogo.Time1SofreMaisGols_Total || !jogo.Time2RealizaMaisGols_Total && !jogo.Time2SofreMaisGols_Total;
 
-            if (minutos >= 60 && 
-                jogo.GolsTotal == 0 && 
-                validacaoBasica05 && 
-                ft05_0x0 && 
-                osDoisTimesFazemGols && 
-                !timesMornos && 
+            if (minutos >= 60 &&
+                jogo.GolsTotal == 0 &&
+                validacaoBasica05 &&
+                ft05_0x0 &&
+                osDoisTimesFazemGols &&
+                !timesMornos &&
                 !umDosTimesNaoFazGolsENaoSofreGols) { EnviaNotificacao(jogo, 0.5, "0.5", 3); return; }
             if (minutos >= 60 && jogo.GolsTotal == 0 && validacaoBasica05) { EnviaNotificacao(jogo, 0.5, "0.5", 2); return; };
             if (minutos >= 60 && jogo.GolsTotal == 1 && validacaoBasica15) { EnviaNotificacao(jogo, 1.5, "1.5", 2); return; };

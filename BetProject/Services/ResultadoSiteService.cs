@@ -495,6 +495,7 @@ namespace BetProject.Services
             {
                 _jogoService.PreencheCamposAnaliseJogo(jogo);
                 _analiseService.AnalisaMediaGolsMenorQue25(jogo);
+                _analiseService.AnalisaMediaGolsMenorQue25_2(jogo);
                 _analiseService.AnalisaSeMelhorJogo(jogo);
             }
         }

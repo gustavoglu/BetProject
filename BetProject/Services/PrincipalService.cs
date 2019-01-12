@@ -91,6 +91,7 @@ namespace BetProject.Services
         {
             try
             {
+
                 var rs = new ResultadoSiteService();
                 await rs.StartAnaliseLive();
             }
