@@ -52,50 +52,77 @@ namespace BetProject.Services
 
         public void AnalisaMediaGolsMenorQue25_2(Jogo jogo)
         {
-            bool jogosLigaOvers = jogo.Liga.Contains("INGLATERRA:");
+            // return;
 
+            bool jogosLigaOvers = jogo.Liga.ToLower().Contains("inglaterra") ||
+                jogo.Liga.ToLower().Contains("holanda") ||
+                jogo.Liga.ToLower().Contains("grécia") ||
+                jogo.Liga.ToLower().Contains("ruanda") ||
+                jogo.Liga.ToLower().Contains("tunísia") ||
+                jogo.Liga.ToLower().Contains("portugal") ||
+                jogo.Liga.ToLower().Contains("china") ||
+                jogo.Liga.ToLower().Contains("ÁFRICA DO SUL: Primeira Liga".ToLower()) ||
+            jogo.Liga.ToLower().Contains("ÁFRICA DO SUL: Primeira Divisão".ToLower()) ||
+            jogo.Liga.ToLower().Contains("PAQUISTÃO: Premier League".ToLower()) ||
+            jogo.Liga.ToLower().Contains("ESPANHA: Segunda Divisão B - Grupo 3".ToLower()) ||
+            jogo.Liga.ToLower().Contains("PAÍS DE GALES: Primeira Divisão".ToLower()) ||
+             jogo.Liga.ToLower().Contains("fem.".ToLower()) ||
+            jogo.Liga.ToLower().Contains("ÍNDIA: Liga Indiana".ToLower()) ||
+            jogo.Liga.ToLower().Contains("Austrália".ToLower()) ||
+            jogo.Liga.ToLower().Contains("NOVA ZELÂNDIA: Campeonato de Futebol".ToLower());
             if (jogosLigaOvers) return;
-            if (jogo.UmTimeFazMaisGolEOutroSofreMaisGolTotal) return;
-            if (jogo.Time1SofreMaisGols_Total && jogo.Time2SofreMaisGols_Total) return;
 
-            bool timesComODobroDeGolsRealizados = jogo.Time1.GolsRealizadosTotal >= (jogo.Time1.QtdJogosTotal * 2) || jogo.Time2.GolsRealizadosTotal >= (jogo.Time2.QtdJogosTotal * 2);
-            bool timesComODobroDeGolsSofridos = jogo.Time1.GolsSofridosTotal >= (jogo.Time1.QtdJogosTotal * 2) || jogo.Time2.GolsSofridosTotal >= (jogo.Time2.QtdJogosTotal * 2);
+            bool time1FazMaisGols = jogo.Time1.GolsRealizadosTotal >= Math.Round(((jogo.Time1.QtdJogosTotal * 0.4) + jogo.Time1.QtdJogosTotal));
+            bool time2FazMaisGols = jogo.Time2.GolsRealizadosTotal >= Math.Round((jogo.Time2.QtdJogosTotal * 0.4) + jogo.Time2.QtdJogosTotal);
+            bool time1SofreMaisGols = jogo.Time1.GolsSofridosTotal >= ((new decimal(jogo.Time1.QtdJogosTotal) * new decimal(0.4)) + jogo.Time1.QtdJogosTotal);
+            bool time2SofreMaisGols = jogo.Time2.GolsSofridosTotal >= ((new decimal(jogo.Time2.QtdJogosTotal) * new decimal(0.4)) + jogo.Time2.QtdJogosTotal);
 
-            bool qtdGolsRealizadosAcimaDoLimiteTime1 = jogo.Time1.GolsRealizadosTotal / jogo.Time1.QtdJogosTotal >= 1.8;
-            bool qtdGolsRealizadosAcimaDoLimiteTime2 = jogo.Time2.GolsRealizadosTotal / jogo.Time2.QtdJogosTotal >= 1.8;
-            bool qtdGolsSofridosAcimaDoLimiteTime1 = jogo.Time1.GolsSofridosTotal / jogo.Time1.QtdJogosTotal >= 1.8;
-            bool qtdGolsSofridosAcimaDoLimiteTime2 = jogo.Time2.GolsSofridosTotal / jogo.Time2.QtdJogosTotal >= 1.8;
-
-            if (qtdGolsRealizadosAcimaDoLimiteTime1 || qtdGolsRealizadosAcimaDoLimiteTime2 || qtdGolsSofridosAcimaDoLimiteTime1 || qtdGolsSofridosAcimaDoLimiteTime2) return;
-
-            if (timesComODobroDeGolsRealizados || timesComODobroDeGolsSofridos) return;
-
-            bool time1FazMaisGols = jogo.Time1.GolsRealizadosTotal >= ((jogo.Time1.QtdJogosTotal * 0.4) + jogo.Time1.QtdJogosTotal);
-            bool time2FazMaisGols = jogo.Time2.GolsRealizadosTotal >= ((jogo.Time2.QtdJogosTotal * 0.4) + jogo.Time2.QtdJogosTotal);
-            bool time1FazPoucosGols = jogo.Time1.GolsSofridosTotal >= ((jogo.Time1.QtdJogosTotal * 0.3) + jogo.Time1.QtdJogosTotal);
-            bool time2FazPoucosGols = jogo.Time2.GolsSofridosTotal >= ((jogo.Time2.QtdJogosTotal * 0.3) + jogo.Time2.QtdJogosTotal);
-            
-   
-
-            if (jogo.UmTimeFazMaisGolEOutroSofreMaisGolTotal)
-                if (!jogo.Time1RealizaMaisGols_Total &&
-                    !jogo.Time2RealizaMaisGols_Total &&
-                    !jogo.Time1SofreMaisGols_Total &&
-                    !jogo.Time2SofreMaisGols_Total)
-                {
-                    _telegramService.EnviaMensagemParaOGrupo(MensagemJogo(jogo, "UNDER"), true);
-                    return;
-                }
-
-            bool qtdAceitavelGolsSofridosTime1 = jogo.Time1.GolsSofridos >= (jogo.Time1.QtdJogosTotal * 0.25);
-            bool qtdAceitavelGolsSofridosTime2 = jogo.Time2.GolsSofridos >= (jogo.Time2.QtdJogosTotal * 0.25);
-
-            if (jogo.Time1RealizaMaisGols_Total && qtdAceitavelGolsSofridosTime2 || jogo.Time2RealizaMaisGols_Total && qtdAceitavelGolsSofridosTime1)
+            if (time1SofreMaisGols &&
+                !time2FazMaisGols &&
+                time1FazMaisGols &&
+                !time2SofreMaisGols)
             {
                 _telegramService.EnviaMensagemParaOGrupo(MensagemJogo(jogo, "UNDER"), true);
                 return;
             }
 
+
+            if (time2SofreMaisGols &&
+               !time1FazMaisGols &&
+               time2FazMaisGols &&
+               !time1SofreMaisGols)
+            {
+                _telegramService.EnviaMensagemParaOGrupo(MensagemJogo(jogo, "UNDER"), true);
+                return;
+            }
+
+            if (time2SofreMaisGols &&
+             !time1FazMaisGols &&
+             !time2FazMaisGols &&
+             time1SofreMaisGols)
+            {
+                _telegramService.EnviaMensagemParaOGrupo(MensagemJogo(jogo, "UNDER"), true);
+                return;
+            }
+
+            if (!time2SofreMaisGols &&
+                time1FazMaisGols &&
+                time2FazMaisGols &&
+                !time1SofreMaisGols)
+            {
+                _telegramService.EnviaMensagemParaOGrupo(MensagemJogo(jogo, "UNDER"), true);
+                return;
+            }
+
+
+            if (!time2SofreMaisGols &&
+               !time1FazMaisGols &&
+               !time2FazMaisGols &&
+               !time1SofreMaisGols)
+            {
+                _telegramService.EnviaMensagemParaOGrupo(MensagemJogo(jogo, "UNDER"), true);
+                return;
+            }
         }
 
 
@@ -123,6 +150,87 @@ namespace BetProject.Services
 
             _telegramService.EnviaMensagemParaOGrupo(MensagemJogo(jogo, "UNDER"), true); ;
         }
+
+        public void AnalisaSeMelhorJogo_2(Jogo jogo)
+        {
+            bool jogosLigaOvers = jogo.Liga.ToLower().Contains("inglaterra") ||
+             jogo.Liga.ToLower().Contains("holanda") ||
+             jogo.Liga.ToLower().Contains("grécia") ||
+             jogo.Liga.ToLower().Contains("ruanda") ||
+             jogo.Liga.ToLower().Contains("tunísia") ||
+             jogo.Liga.ToLower().Contains("portugal") ||
+             jogo.Liga.ToLower().Contains("china") ||
+             jogo.Liga.ToLower().Contains("ÁFRICA DO SUL: Primeira Liga".ToLower()) ||
+         jogo.Liga.ToLower().Contains("ÁFRICA DO SUL: Primeira Divisão".ToLower()) ||
+         jogo.Liga.ToLower().Contains("PAQUISTÃO: Premier League".ToLower()) ||
+         jogo.Liga.ToLower().Contains("ESPANHA: Segunda Divisão B - Grupo 3".ToLower()) ||
+         jogo.Liga.ToLower().Contains("PAÍS DE GALES: Primeira Divisão".ToLower()) ||
+          jogo.Liga.ToLower().Contains("fem.".ToLower()) ||
+         jogo.Liga.ToLower().Contains("ÍNDIA: Liga Indiana".ToLower()) ||
+         jogo.Liga.ToLower().Contains("Austrália".ToLower()) ||
+         jogo.Liga.ToLower().Contains("NOVA ZELÂNDIA: Campeonato de Futebol".ToLower());
+            if (!jogosLigaOvers) return;
+
+            bool time1FazMaisGols = jogo.Time1.GolsRealizadosTotal >= Math.Round(((jogo.Time1.QtdJogosTotal * 0.4) + jogo.Time1.QtdJogosTotal));
+            bool time2FazMaisGols = jogo.Time2.GolsRealizadosTotal >= Math.Round((jogo.Time2.QtdJogosTotal * 0.4) + jogo.Time2.QtdJogosTotal);
+            bool time1SofreMaisGols = jogo.Time1.GolsSofridosTotal >= ((new decimal(jogo.Time1.QtdJogosTotal) * new decimal(0.4)) + jogo.Time1.QtdJogosTotal);
+            bool time2SofreMaisGols = jogo.Time2.GolsSofridosTotal >= ((new decimal(jogo.Time2.QtdJogosTotal) * new decimal(0.4)) + jogo.Time2.QtdJogosTotal);
+
+            if(time1FazMaisGols &&
+                time2SofreMaisGols ||
+                time2FazMaisGols &&
+                time1SofreMaisGols)
+            {
+                _telegramService.EnviaMensagemParaOGrupo(MensagemJogo(jogo, "OVER", null), true);
+                return;
+            }
+
+            if (time1FazMaisGols &&
+              !time2SofreMaisGols &&
+              !time2FazMaisGols &&
+              !time1SofreMaisGols)
+            {
+                _telegramService.EnviaMensagemParaOGrupo(MensagemJogo(jogo, "OVER", null), true);
+                return;
+            }
+
+            if (time1FazMaisGols &&
+             time2SofreMaisGols &&
+             !time2FazMaisGols &&
+             time1SofreMaisGols)
+            {
+                _telegramService.EnviaMensagemParaOGrupo(MensagemJogo(jogo, "OVER", null), true);
+                return;
+            }
+
+            if (time1FazMaisGols &&
+             time2SofreMaisGols &&
+             time2FazMaisGols &&
+             time1SofreMaisGols)
+            {
+                _telegramService.EnviaMensagemParaOGrupo(MensagemJogo(jogo, "OVER", null), true);
+                return;
+            }
+
+            if (time1FazMaisGols &&
+             time2SofreMaisGols &&
+             !time2FazMaisGols &&
+             time1SofreMaisGols)
+            {
+                _telegramService.EnviaMensagemParaOGrupo(MensagemJogo(jogo, "OVER", null), true);
+                return;
+            }
+
+            if (!time1FazMaisGols &&
+           time2SofreMaisGols &&
+           time2FazMaisGols &&
+           time1SofreMaisGols)
+            {
+                _telegramService.EnviaMensagemParaOGrupo(MensagemJogo(jogo, "OVER", null), true);
+                return;
+            }
+        }
+
 
         public void AnalisaSeMelhorJogo(Jogo jogo)
         {

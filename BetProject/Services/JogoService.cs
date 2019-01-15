@@ -145,6 +145,7 @@ namespace BetProject.Services
             _analiseService.AnalisaMediaGolsMenorQue25(jogo);
             _analiseService.AnalisaMediaGolsMenorQue25_2(jogo);
             _analiseService.AnalisaSeMelhorJogo(jogo);
+            _analiseService.AnalisaSeMelhorJogo_2(jogo);
             _jogoRepository.Salvar(jogo);
 
         }
@@ -231,7 +232,7 @@ namespace BetProject.Services
             return true;
         }
 
-        private async Task PegaInfosAcimaAbaixo(string idBet, List<Time> times, int totalGols, bool driverParalelo = false)
+        public async Task PegaInfosAcimaAbaixo(string idBet, List<Time> times, int totalGols, bool driverParalelo = false)
         {
             // Total
             // 0.5
@@ -290,7 +291,28 @@ namespace BetProject.Services
 
         }
 
-        private void CriaAcimaAbaixoTotal(double overValor, IWebElement tabelaClassificacao, EClassificacaoTipo tipo, List<Time> times)
+        public void PegaUltimoOver(double overValor, IWebElement tabelaClassificacao, EClassificacaoTipo tipo, List<Time> times)
+        {
+            var trTimes = tabelaClassificacao.FindElements(By.ClassName("highlight"));
+            foreach (var tr in trTimes)
+            {
+                var nomeTime = tr.FindElement(By.ClassName("team_name_span"))
+                                    .FindElement(By.TagName("a")).Text;
+
+                bool? ultimoOverPositivo;
+                var underovers = tr.FindElement(By.ClassName("matches-5")).FindElements(By.TagName("a"));
+                if (underovers.Count > 2)
+                {
+
+                    string classInfo = underovers[2].GetAttribute("class");
+                    ultimoOverPositivo = classInfo.Contains("form-under") ? false : true;
+                    times.FirstOrDefault(t => t.Nome == nomeTime).UltimoOverPositivo = ultimoOverPositivo;
+                }
+
+            }
+        }
+
+        public void CriaAcimaAbaixoTotal(double overValor, IWebElement tabelaClassificacao, EClassificacaoTipo tipo, List<Time> times)
         {
             var trTimes = tabelaClassificacao.FindElements(By.ClassName("highlight"));
             foreach (var tr in trTimes)
@@ -303,6 +325,16 @@ namespace BetProject.Services
                 var gj = tr.FindElement(By.ClassName("col_avg_goals_match")).Text;
                 var asTag = tr.FindElement(By.ClassName("col_last_5"))
                                 .FindElements(By.TagName("a"));
+
+
+                bool? ultimoOverPositivo;
+                var underovers = tr.FindElement(By.ClassName("matches-5")).FindElements(By.TagName("a"));
+                if(underovers.Count > 1) {
+
+                    string classInfo = underovers[1].GetAttribute("class");
+                    ultimoOverPositivo = classInfo.Contains("form-under") ? false : true;
+                    times.FirstOrDefault(t => t.Nome == nomeTime).UltimoOverPositivo = ultimoOverPositivo;
+                }
 
                 var overs = tr.FindElements(By.ClassName("form-over")).Count;
                 var unders = tr.FindElements(By.ClassName("form-under")).Count;

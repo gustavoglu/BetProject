@@ -487,16 +487,44 @@ namespace BetProject.Services
             ResultadosSiteHelper.CarregandoJogos = false;
         }
 
-        public void ReanalisaJogosDeHoje()
+        public async void ReanalisaJogosDeHoje()
         {
-            var container = _idContainerRepository.TrazerIdContainerHoje();
+
+            //var jogot = _jogoRepository.TrazerJogoPorIdBet("EmdTegMP");
+            //_jogoService.PreencheCamposAnaliseJogo(jogot);
+            //_analiseService.AnalisaMediaGolsMenorQue25_2(jogot);
+            //return;
+            //if (_driver == null) _driver = SeleniumHelper.CreateDefaultWebDriver();
+            var container = _idContainerRepository.TrazerPorId("IdContainers/1281-A");
+
+            //foreach (var i in container.Ids)
+            //{
+            //    try
+            //    {
+            //        // 1.5
+            //        _driver.Navigate().GoToUrl("https://www.resultados.com/jogo/ID/#classificacao;over_under;overall;1.5".Replace("ID", i.Id));
+            //        var jogo = _jogoRepository.TrazerJogoPorIdBet(i.Id);
+            //        await Task.Delay(2000);
+            //        var tabelaAcimaAbaixoTotal15 = _driver.FindElement(By.Id("table-type-6-1.5"));
+            //        var jogolist = new List<Time> { jogo.Time1, jogo.Time2 };
+            //        _jogoService.PegaUltimoOver(1.5, tabelaAcimaAbaixoTotal15, EClassificacaoTipo.Total, jogolist);
+            //        jogo.Time1 = jogolist[0];
+            //        jogo.Time2 = jogolist[1];
+            //        _jogoRepository.Salvar(jogo);
+            //    }
+            //    catch { }
+
+            //}
+            //return;
+
             var jogos = _jogoRepository.TrazJogosPorIds(container.Ids.Select(i => i.Id).ToArray());
             foreach (var jogo in jogos)
             {
                 _jogoService.PreencheCamposAnaliseJogo(jogo);
-                _analiseService.AnalisaMediaGolsMenorQue25(jogo);
-                _analiseService.AnalisaMediaGolsMenorQue25_2(jogo);
-                _analiseService.AnalisaSeMelhorJogo(jogo);
+                //_analiseService.AnalisaMediaGolsMenorQue25(jogo);
+                //_analiseService.AnalisaMediaGolsMenorQue25_2(jogo);
+                _analiseService.AnalisaSeMelhorJogo_2(jogo);
+                //_analiseService.AnalisaSeMelhorJogo(jogo);
             }
         }
 
