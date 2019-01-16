@@ -66,6 +66,7 @@ namespace BetProject.Services
         }
 
 
+
         public void AtualizaInformacoesBasicasJogo2( IWebElement tr,Jogo jogo)
         {
             string minutos = "";
