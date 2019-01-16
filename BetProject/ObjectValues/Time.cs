@@ -13,7 +13,7 @@ namespace BetProject.ObjectValues
 
         public string Nome { get; set; }
         public ICollection<Classificacao> Classificacoes { get; set; }
-        public List<AcimaAbaixo> AcimaAbaixo  { get; set; }
+        public List<AcimaAbaixo> AcimaAbaixo { get; set; }
         public double MediaGols { get; set; } = 0;
         public string Gols { get; set; }
         public int Classificacao { get; set; } = 0;
@@ -29,5 +29,9 @@ namespace BetProject.ObjectValues
         public int QtdJogos { get; set; }
         public int QtdJogosTotal { get; set; }
         public int QtdTotalDeJogosOvers { get; set; }
+        public List<H2HInfo> H2HInfos { get; set; }
+        public decimal PercOverUltimosJogos { get; set; }
+        public int GolsRealizadosH2H { get; set; }
+        public int GolsSofridosH2H { get; set; }
     }
 }

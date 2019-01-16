@@ -490,7 +490,19 @@ namespace BetProject.Services
         public async void ReanalisaJogosDeHoje()
         {
 
-            //var jogot = _jogoRepository.TrazerJogoPorIdBet("EmdTegMP");
+            //var jogot = _jogoRepository.TrazerJogoPorIdBet("Iw45X9cr");
+            //_jogoService.PegaInformacoesH2H(jogot);
+            //_jogoRepository.Salvar(jogot);
+            //return;
+
+            var containerh = _idContainerRepository.TrazerIdContainerHoje();
+            var jogost = _jogoRepository.TrazJogosPorIds(containerh.Ids.Select(i => i.Id).ToArray());
+            foreach (var j in jogost)
+            {
+                await _jogoService.PegaInformacoesH2H(j); _jogoRepository.Salvar(j);
+            }
+            return;
+
             //_jogoService.PreencheCamposAnaliseJogo(jogot);
             //_analiseService.AnalisaMediaGolsMenorQue25_2(jogot);
             //return;

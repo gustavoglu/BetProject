@@ -18,12 +18,12 @@ namespace BetProject.Services
 {
     public class JogoService
     {
-        private readonly IWebDriver _driver;
+        private IWebDriver _driver;
         private readonly SeleniumConfiguration _configuration;
         private readonly IdContainerRepository _idContainerRepository;
         private readonly JogoRepository _jogoRepository;
         private readonly AnaliseService _analiseService;
-        
+
         public JogoService(IWebDriver driver)
         {
             _driver = driver;
@@ -66,14 +66,82 @@ namespace BetProject.Services
         }
 
 
+        public async Task PegaInformacoesH2H(Jogo jogo)
+        {
+            //if (_driver == null) _driver = SeleniumHelper.CreateDefaultWebDriver();
 
-        public void AtualizaInformacoesBasicasJogo2( IWebElement tr,Jogo jogo)
+            _driver.Navigate().GoToUrl($"https://www.resultados.com/jogo/{jogo.IdJogoBet}#h2h;overall");
+            await Task.Delay(2000);
+            var showMores = _driver.FindElements(By.ClassName("show_more")) ;
+            showMores[0].Click();
+            showMores[1].Click();
+
+            //var tabelas = _driver.FindElements(By.ClassName("h2h-wrapper"));
+            var trsTime1 = _driver.FindElement(By.ClassName("h2h_home"))
+                                .FindElement(By.TagName("tbody"))
+                                .FindElements(By.TagName("tr"));
+            var trsTime2 = _driver.FindElement(By.ClassName("h2h_away"))
+                                .FindElement(By.TagName("tbody"))
+                                .FindElements(By.TagName("tr"));
+
+            List<H2HInfo> h2hInfoListTime1 = new List<H2HInfo>();
+            List<H2HInfo> h2hInfoListTime2 = new List<H2HInfo>();
+
+            foreach (var tr in trsTime1.Take(10))
+                h2hInfoListTime1.Add(CriarH2HInfo(tr));
+
+            foreach (var tr in trsTime2.Take(10))
+                h2hInfoListTime2.Add(CriarH2HInfo(tr));
+
+            jogo.Time1.H2HInfos = h2hInfoListTime1;
+            jogo.Time2.H2HInfos = h2hInfoListTime2;
+            jogo.Time1.GolsRealizadosH2H = h2hInfoListTime1.Sum(j => j.GolsTime1);
+            jogo.Time2.GolsRealizadosH2H = h2hInfoListTime2.Sum(j => j.GolsTime1);
+            jogo.Time1.GolsSofridosH2H = h2hInfoListTime1.Sum(j => j.GolsTime2);
+            jogo.Time2.GolsSofridosH2H = h2hInfoListTime2.Sum(j => j.GolsTime2);
+            jogo.Time1.PercOverUltimosJogos = (new decimal(h2hInfoListTime1.Count(j => j.TotalGols > 2)) / new decimal (h2hInfoListTime1.Count)) * new decimal(100);
+            jogo.Time2.PercOverUltimosJogos = (new decimal(h2hInfoListTime2.Count(j => j.TotalGols > 2)) / new decimal(h2hInfoListTime2.Count)) * new decimal(100);
+        }
+
+        private H2HInfo CriarH2HInfo(IWebElement tr)
+        {
+            var nomes = tr.FindElements(By.ClassName("name"));
+            string t1Nome = nomes[0].Text;
+            string t2Nome = nomes[1].Text;
+
+            bool time1Principal = Time1PrincipalH2H(nomes);
+            string score = tr.FindElement(By.ClassName("score"))
+                            .FindElement(By.TagName("strong")).Text;
+            H2HInfo i = new H2HInfo();
+            i.Time1 = time1Principal ? t1Nome : t2Nome;
+            i.Time2 = time1Principal ? t2Nome : t1Nome;
+            i.GolsTime1 = time1Principal ? TimeHelper.GolsRealizadosConvert(score) :
+                                           TimeHelper.GolsSofridosConvert(score);
+            i.GolsTime2 = time1Principal ? TimeHelper.GolsSofridosConvert(score) :
+                                           TimeHelper.GolsRealizadosConvert(score);
+
+            i.Vencedor = i.GolsTime1 > i.GolsTime2;
+            i.Empate = i.GolsTime1 == i.GolsTime2;
+            i.TotalGols = i.GolsTime1 + i.GolsTime2;
+            return i;
+        }
+
+        private bool Time1PrincipalH2H(ICollection<IWebElement> nomes)
+        {
+
+            string classInfo = nomes.ToArray()[0].GetAttribute("class");
+            return classInfo.Contains("highTeam");
+
+        }
+
+
+        public void AtualizaInformacoesBasicasJogo2(IWebElement tr, Jogo jogo)
         {
             string minutos = "";
             string score = "";
             try
             {
-               minutos=  tr.FindElement(By.ClassName("cell_aa")).FindElement(By.TagName("span")).Text;
+                minutos = tr.FindElement(By.ClassName("cell_aa")).FindElement(By.TagName("span")).Text;
             }
             catch { }
 
@@ -83,8 +151,8 @@ namespace BetProject.Services
             }
             catch { }
             jogo.Status = JogoHelper.StatusJogo(minutos) ? minutos : "Sem Status";
-            jogo.Minutos = JogoHelper.StatusJogo(minutos)? "0" : minutos;
-            jogo.GolsTime1 = TimeHelper.GolsScoreConvert(score,true);
+            jogo.Minutos = JogoHelper.StatusJogo(minutos) ? "0" : minutos;
+            jogo.GolsTime1 = TimeHelper.GolsScoreConvert(score, true);
             jogo.GolsTime2 = TimeHelper.GolsScoreConvert(score, false);
         }
 
@@ -223,7 +291,7 @@ namespace BetProject.Services
 
                 var asTag = tr.FindElement(By.ClassName("form"))
                                 .FindElements(By.TagName("a"));
-               
+
 
                 Classificacao classif = new Classificacao(tipo, vitorias.Count, empates.Count, derrotas.Count, qtdJogos,
                                                             lugar, trsTotal.Count - 1, gols);
@@ -330,7 +398,8 @@ namespace BetProject.Services
 
                 bool? ultimoOverPositivo;
                 var underovers = tr.FindElement(By.ClassName("matches-5")).FindElements(By.TagName("a"));
-                if(underovers.Count > 1) {
+                if (underovers.Count > 1)
+                {
 
                     string classInfo = underovers[1].GetAttribute("class");
                     ultimoOverPositivo = classInfo.Contains("form-under") ? false : true;

@@ -94,6 +94,7 @@ namespace BetProject.Models
         public DateTime FimPrimeroTempo { get; set; }
         public DateTime InicioSegundoTempo { get; set; }
         public DateTime FimSegundoTempo{ get; set; }
+        public bool Over { get; set; }
         public string LinkResultados { get; set; }
         public bool Ignorar { get; set; } = false;
     }
