@@ -93,8 +93,7 @@ namespace BetProject.Services
             {
 
                 var rs = new ResultadoSiteService(SeleniumHelper.CreateDefaultWebDriver());
-                //rs.ReanalisaJogosDeHoje();
-                await rs.CarregaJogosDeAmanhaH2H();
+                await rs.CarregaJogosDeHojeH2H(false,false,true);
                 //await rs.StartAnaliseLive();
             }
             catch (Exception e)

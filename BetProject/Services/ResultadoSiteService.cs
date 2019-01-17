@@ -470,6 +470,28 @@ namespace BetProject.Services
             ResultadosSiteHelper.CarregandoJogos = false;
         }
 
+        public async Task SalvaJogosDeHojeH2H(IdContainer container, bool descending = false, IWebDriver driver = null)
+        {
+            if (driver != null) _driver = driver;
+            Console.WriteLine($"Salvando Jogos De Hoje as {DateTime.Now}");
+
+            ResultadosSiteHelper.CarregandoJogos = true;
+
+            var ids = descending ? container.Ids.OrderByDescending(id => id.DataInicio.TimeOfDay) :
+                                   container.Ids.OrderBy(id => id.DataInicio.TimeOfDay);
+
+            try
+            {
+                foreach (var i in ids) await CriarOuAtualizaInfosJogoH2H(i.Id, container.Id, true);
+            }
+            catch (Exception e)
+            {
+                foreach (var i in ids) await CriarOuAtualizaInfosJogoH2H(i.Id, container.Id, true);
+            }
+
+            ResultadosSiteHelper.CarregandoJogos = false;
+        }
+
 
         public async Task SalvaJogosDeAmanhaH2H(IdContainer container, bool descending = false, IWebDriver driver = null)
         {
@@ -515,6 +537,17 @@ namespace BetProject.Services
             }
 
             ResultadosSiteHelper.CarregandoJogos = false;
+        }
+
+        public void AnalisaJogosH2H(IdContainer container)
+        {
+            var ids = container.Ids.OrderBy(i => i.DataInicio.TimeOfDay).ToList();
+            var jogos = _jogoRepository.TrazJogosPorIds(container.Ids.Select(i => i.Id).ToArray()).OrderBy(j => j.DataInicio.TimeOfDay);
+            foreach (var j in jogos)
+            {
+                _analiseService.AnalisaOverH2H(j);
+                _analiseService.AnalisaUnderH2H(j);
+            }
         }
 
         public async void ReanalisaJogosDeHoje()
@@ -624,8 +657,8 @@ namespace BetProject.Services
                 {
                     if (jogo.Ignorar && ignorar) return;
                     await _jogoService.AtualizaInformacoesBasicasJogo(jogo);
-                    _analiseService.AnalisaOverH2H(jogo);
-                    _analiseService.AnalisaUnderH2H(jogo);
+                    //_analiseService.AnalisaOverH2H(jogo);
+                    //_analiseService.AnalisaUnderH2H(jogo);
                     _jogoRepository.Salvar(jogo);
                 }
                 catch (Exception e)
@@ -776,6 +809,58 @@ namespace BetProject.Services
             _telegramService.EnviaMensagemParaOGrupo($"{jogosFSOuDobro.Count} jogo(s) sera(ão) analisado(s) dia {DateTime.Now.Date} com Inicio as {primeiroJogo.DataInicio.TimeOfDay}");
             // await TentaCarregarJogosComErroHoje();
 
+        }
+
+
+        public async Task CarregaJogosDeHojeH2H(bool descending = false, bool headless = false, bool ignorarHorario = false)
+        {
+            while (ResultadosSiteHelper.CarregandoJogos)
+            {
+                await Task.Delay(400000);
+            }
+
+            var idContainer = _idContainerRepository.TrazerIdContainerHoje();
+
+            if (idContainer != null && !ignorarHorario) return;
+
+            bool depoisDasSete = DateTime.Now >= new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 19, 00, 00);
+
+            if (depoisDasSete || ignorarHorario)
+            {
+                var data = DateTime.Now.Date.AddDays(1).Date;
+                _telegramService.EnviaMensagemParaOGrupo($"Carregando Jogos de Hoje {data}");
+
+                var container = _idContainerRepository.TrazerIdContainerHoje();
+                if (container == null || !container.Ids.Any())
+                {
+                    IWebDriver wd3 = SeleniumHelper.CreateDefaultWebDriver(headless);
+                    ResultadoSiteService rs3 = new ResultadoSiteService(wd3);
+                    container = await rs3.SalvaJogosIds(true);
+                    wd3.Dispose();
+                    GC.Collect();
+                }
+
+                IWebDriver wd1 = SeleniumHelper.CreateDefaultWebDriver(headless);
+                ResultadoSiteService rs1 = new ResultadoSiteService(wd1);
+                IWebDriver wd2 = SeleniumHelper.CreateDefaultWebDriver(headless);
+                ResultadoSiteService rs2 = new ResultadoSiteService(wd2);
+
+                await Task.Delay(5000);
+                Console.WriteLine($"Salvando Jogos De Hoje as {DateTime.Now}");
+                Task.Factory.StartNew(async () =>
+                {
+                    await rs2.SalvaJogosDeHojeH2H(container, false, wd2);
+                });
+
+                await rs1.SalvaJogosDeHojeH2H(container, true, wd1);
+
+                AnalisaJogosH2H(container);
+
+                ResultadosSiteHelper.CarregandoJogos = false;
+
+                wd1.Dispose();
+                wd2.Dispose();
+            }
         }
 
         public async Task CarregaJogosDeAmanhaH2H(bool descending = false, bool headless = false, bool ignorarHorario = false)

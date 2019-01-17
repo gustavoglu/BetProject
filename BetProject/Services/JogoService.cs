@@ -202,8 +202,8 @@ namespace BetProject.Services
 
             if (jogo.Time1.H2HInfos == null || jogo.Time2.H2HInfos == null || !jogo.Time1.H2HInfos.Any() || !jogo.Time2.H2HInfos.Any()) return;
 
-                _analiseService.AnalisaOverH2H(jogo);
-            _analiseService.AnalisaUnderH2H(jogo);
+            //_analiseService.AnalisaOverH2H(jogo);
+            //_analiseService.AnalisaUnderH2H(jogo);
             _jogoRepository.Salvar(jogo);
         }
 
