@@ -64,6 +64,12 @@ namespace BetProject.Services
             _driver.Navigate().GoToUrl(site);
         }
 
+
+        public async Task AnaliseH2H()
+        {
+            await CarregaJogosDeAmanha();
+        }
+
         private void RemoveTodasTabelasTabela()
         {
             var head_abs = _driver.FindElements(By.ClassName("head_ab")).ToList();
@@ -463,6 +469,30 @@ namespace BetProject.Services
 
             ResultadosSiteHelper.CarregandoJogos = false;
         }
+
+
+        public async Task SalvaJogosDeAmanhaH2H(IdContainer container, bool descending = false, IWebDriver driver = null)
+        {
+            if (driver != null) _driver = driver;
+            Console.WriteLine($"Salvando Jogos De Amanhã as {DateTime.Now}");
+
+            ResultadosSiteHelper.CarregandoJogos = true;
+
+            var ids = descending ? container.Ids.OrderByDescending(id => id.DataInicio.TimeOfDay) :
+                                   container.Ids.OrderBy(id => id.DataInicio.TimeOfDay);
+
+            try
+            {
+                foreach (var i in ids) await CriarOuAtualizaInfosJogoH2H(i.Id, container.Id, true);
+            }
+            catch (Exception e)
+            {
+                foreach (var i in ids) await CriarOuAtualizaInfosJogoH2H(i.Id, container.Id, true);
+            }
+
+            ResultadosSiteHelper.CarregandoJogos = false;
+        }
+
         public async Task SalvaJogosDeAmanha(bool descending = false, IWebDriver driver = null)
         {
             if (driver != null) _driver = driver;
@@ -576,6 +606,47 @@ namespace BetProject.Services
                     //if (idContainer == null) idContainer = _idContainerRepository.TrazerIdContainerHoje();
                     //idContainer.IdsComErro.Add(jogoId);
                     //_idContainerRepository.Salvar(idContainer);
+                }
+        }
+
+        public async Task CriarOuAtualizaInfosJogoH2H(string id, string idContainerId, bool amanha = false, bool ignorar = true)
+        {
+            Console.WriteLine($"Criando ou Atualizando ID: {id} as {DateTime.Now}");
+            var idContainer = _idContainerRepository.TrazerPorId(idContainerId);
+
+            var jogoId = idContainer.Ids.FirstOrDefault(i => i.Id == id) ??
+                         idContainer.IdsLive.FirstOrDefault(i => i.Id == id);
+
+            var jogo = _jogoRepository.TrazerJogoPorIdBet(jogoId.Id);
+
+            if (jogo != null)
+                try
+                {
+                    if (jogo.Ignorar && ignorar) return;
+                    await _jogoService.AtualizaInformacoesBasicasJogo(jogo);
+                    _analiseService.AnalisaOverH2H(jogo);
+                    _analiseService.AnalisaUnderH2H(jogo);
+                    _jogoRepository.Salvar(jogo);
+                }
+                catch (Exception e)
+                {
+                    jogoId.ErrorMessage = e.Message;
+                    idContainer = _idContainerRepository.TrazerPorId(idContainerId);
+                    idContainer.IdsComErro.Add(jogoId);
+                    _idContainerRepository.Salvar(idContainer);
+
+                }
+            else
+                try
+                {
+                    await _jogoService.CriaNovoJogoH2H(id);
+                }
+                catch (Exception e)
+                {
+                    jogoId.ErrorMessage = e.Message;
+                    idContainer = _idContainerRepository.TrazerPorId(idContainerId);
+                    idContainer.IdsComErro.Add(jogoId);
+                    _idContainerRepository.Salvar(idContainer);
                 }
         }
 
@@ -707,6 +778,54 @@ namespace BetProject.Services
 
         }
 
+        public async Task CarregaJogosDeAmanhaH2H(bool descending = false, bool headless = false, bool ignorarHorario = false)
+        {
+            while (ResultadosSiteHelper.CarregandoJogos)
+            {
+                await Task.Delay(400000);
+            }
+
+            var idContainer = _idContainerRepository.TrazerIdContainerAmanha();
+
+            //if (idContainer != null && !ignorarHorario) return;
+
+            bool depoisDasSete = DateTime.Now >= new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 19, 00, 00);
+
+            if (depoisDasSete || ignorarHorario)
+            {
+                var data = DateTime.Now.Date.AddDays(1).Date;
+                _telegramService.EnviaMensagemParaOGrupo($"Carregando Jogos de Amanhã {data}");
+
+                var container = _idContainerRepository.TrazerIdContainerAmanha();
+                if (container == null || !container.Ids.Any())
+                {
+                    IWebDriver wd3 = SeleniumHelper.CreateDefaultWebDriver(headless);
+                    ResultadoSiteService rs3 = new ResultadoSiteService(wd3);
+                    container = await rs3.SalvaJogosIds(true);
+                    wd3.Dispose();
+                    GC.Collect();
+                }
+
+                IWebDriver wd1 = SeleniumHelper.CreateDefaultWebDriver(headless);
+                ResultadoSiteService rs1 = new ResultadoSiteService(wd1);
+                IWebDriver wd2 = SeleniumHelper.CreateDefaultWebDriver(headless);
+                ResultadoSiteService rs2 = new ResultadoSiteService(wd2);
+
+                await Task.Delay(5000);
+                Console.WriteLine($"Salvando Jogos De Amanhã as {DateTime.Now}");
+                Task.Factory.StartNew(async () =>
+                {
+                    await rs2.SalvaJogosDeAmanhaH2H(container, false, wd2);
+                });
+
+                await rs1.SalvaJogosDeAmanhaH2H(container, true, wd1);
+
+                ResultadosSiteHelper.CarregandoJogos = false;
+
+                wd1.Dispose();
+                wd2.Dispose();
+            }
+        }
 
 
         public async Task CarregaJogosDeAmanha(bool descending = false, bool headless = false, bool ignorarHorario = false)

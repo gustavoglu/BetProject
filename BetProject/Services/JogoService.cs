@@ -68,7 +68,7 @@ namespace BetProject.Services
 
         public async Task PegaInformacoesH2H(Jogo jogo)
         {
-            //if (_driver == null) _driver = SeleniumHelper.CreateDefaultWebDriver();
+            if (_driver == null) _driver = SeleniumHelper.CreateDefaultWebDriver();
 
             _driver.Navigate().GoToUrl($"https://www.resultados.com/jogo/{jogo.IdJogoBet}#h2h;overall");
             await Task.Delay(2000);
@@ -86,6 +86,8 @@ namespace BetProject.Services
 
             List<H2HInfo> h2hInfoListTime1 = new List<H2HInfo>();
             List<H2HInfo> h2hInfoListTime2 = new List<H2HInfo>();
+
+            if (trsTime1.Count < 10 || trsTime2.Count < 10) return;
 
             foreach (var tr in trsTime1.Take(10))
                 h2hInfoListTime1.Add(CriarH2HInfo(tr));
@@ -135,6 +137,7 @@ namespace BetProject.Services
         }
 
 
+
         public void AtualizaInformacoesBasicasJogo2(IWebElement tr, Jogo jogo)
         {
             string minutos = "";
@@ -174,9 +177,37 @@ namespace BetProject.Services
 
             jogo.GolsTime1 = score1;
             jogo.GolsTime2 = score2;
+            jogo.LinkResultados = GetLinkResultadosId(jogo.IdJogoBet);
         }
 
-        public async Task CriaNovoJogo(string idBet)
+        public async Task CriaNovoJogoH2H(string idBet)
+        {
+            TimeServices ts = new TimeServices(_driver);
+            _driver.Navigate().GoToUrl(_configuration.Sites.Resultado.ResumoJogo.Replace("ID", idBet));
+            await Task.Delay(2000);
+
+            //if (!JogoClassificacao() || JogoSemJogosParaAnalise(idBet))
+            //{
+            //    _idContainerRepository.IgnoraIdJogo(idBet);
+            //    return;
+            //}
+
+            List<Time> times = ts.CriaTimes(idBet);
+            if (times == null) return;
+            Jogo jogo = await CriaJogo(idBet, times);
+            if (jogo == null) return;
+
+            jogo.LinkResultados = GetLinkResultadosId(jogo.IdJogoBet);
+            await PegaInformacoesH2H(jogo);
+
+            if (jogo.Time1.H2HInfos == null || jogo.Time2.H2HInfos == null || !jogo.Time1.H2HInfos.Any() || !jogo.Time2.H2HInfos.Any()) return;
+
+                _analiseService.AnalisaOverH2H(jogo);
+            _analiseService.AnalisaUnderH2H(jogo);
+            _jogoRepository.Salvar(jogo);
+        }
+
+            public async Task CriaNovoJogo(string idBet)
         {
             TimeServices ts = new TimeServices(_driver);
             _driver.Navigate().GoToUrl(_configuration.Sites.Resultado.ResumoJogo.Replace("ID", idBet));
