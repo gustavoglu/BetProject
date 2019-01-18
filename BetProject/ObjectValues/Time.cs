@@ -33,5 +33,13 @@ namespace BetProject.ObjectValues
         public decimal PercOverUltimosJogos { get; set; }
         public int GolsRealizadosH2H { get; set; }
         public int GolsSofridosH2H { get; set; }
+        public int QtdJogosH2H0 { get; set; }
+        public int QtdJogosH2H05 { get; set; }
+        public int QtdJogosH2H15 { get; set; }
+        public int QtdJogosH2H25 { get; set; }
+        public int QtdJogosH2HOver15 { get; set; }
+        public int QtdJogosH2HOver25 { get; set; }
+        public int QtdJogosUnderH2H25 { get; set; }
+        public int QtdJogosUnderH2H35 { get; set; }
     }
 }

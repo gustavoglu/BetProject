@@ -509,7 +509,7 @@ namespace BetProject.Services
             }
             catch (Exception e)
             {
-                foreach (var i in ids) await CriarOuAtualizaInfosJogoH2H(i.Id, container.Id, true);
+                _telegramService.EnviaMensagemParaOGrupo($"Erro: {e.Message}");
             }
 
             ResultadosSiteHelper.CarregandoJogos = false;
@@ -539,24 +539,53 @@ namespace BetProject.Services
             ResultadosSiteHelper.CarregandoJogos = false;
         }
 
-        public void AnalisaJogosH2H(IdContainer container)
+        public async void AnalisaJogosH2H(IdContainer container)
         {
+            //var jogot = _jogoRepository.TrazerJogoPorIdBet("KU067KaT");
+            //_analiseService.AnalisaOverH2H(jogot);return;
+
             var ids = container.Ids.OrderBy(i => i.DataInicio.TimeOfDay).ToList();
-            var jogos = _jogoRepository.TrazJogosPorIds(container.Ids.Select(i => i.Id).ToArray()).OrderBy(j => j.DataInicio.TimeOfDay);
-            foreach (var j in jogos)
+            var jogos = _jogoRepository.TrazJogosPorIds(container.Ids.Select(i => i.Id).ToArray()).OrderBy(j => j.DataInicio.TimeOfDay).ToList();
+
+            //foreach (var jo in jogos)
+            //{
+
+            //    jo.Time1.QtdJogosH2H05 = jo.Time1.H2HInfos.Count(j => j.TotalGols == 1);
+            //    jo.Time1.QtdJogosH2H15 = jo.Time1.H2HInfos.Count(j => j.TotalGols == 2);
+            //    jo.Time1.QtdJogosH2H25 = jo.Time1.H2HInfos.Count(j => j.TotalGols >= 3);
+            //    jo.Time2.QtdJogosH2H05 = jo.Time2.H2HInfos.Count(j => j.TotalGols == 1);
+            //    jo.Time2.QtdJogosH2H15 = jo.Time2.H2HInfos.Count(j => j.TotalGols == 2);
+            //    jo.Time2.QtdJogosH2H25 = jo.Time2.H2HInfos.Count(j => j.TotalGols >= 3);
+            //    jo.Time1.QtdJogosUnderH2H25 = jo.Time1.H2HInfos.Count(j => j.TotalGols <= 2);
+            //    jo.Time1.QtdJogosUnderH2H35 = jo.Time1.H2HInfos.Count(j => j.TotalGols <= 3);
+            //    jo.Time1.QtdJogosH2HOver15 = jo.Time1.H2HInfos.Count(j => j.TotalGols >= 2);
+            //    jo.Time1.QtdJogosH2HOver25 = jo.Time1.H2HInfos.Count(j => j.TotalGols >= 3);
+            //    jo.Time2.QtdJogosUnderH2H25 = jo.Time2.H2HInfos.Count(j => j.TotalGols <= 2);
+            //    jo.Time2.QtdJogosUnderH2H35 = jo.Time2.H2HInfos.Count(j => j.TotalGols <= 3);
+            //    jo.Time2.QtdJogosH2HOver15 = jo.Time2.H2HInfos.Count(j => j.TotalGols >= 2);
+            //    jo.Time2.QtdJogosH2HOver25 = jo.Time2.H2HInfos.Count(j => j.TotalGols >= 3);
+
+            //    _jogoRepository.Salvar(jo);
+            //}
+
+            for (int i = 0; i < jogos.Count; i++)
             {
+                var j = jogos[i];
                 _analiseService.AnalisaOverH2H(j);
+                await Task.Delay(200);
                 _analiseService.AnalisaUnderH2H(j);
+                await Task.Delay(200);
             }
         }
 
         public async void ReanalisaJogosDeHoje()
         {
 
-            //var jogot = _jogoRepository.TrazerJogoPorIdBet("Iw45X9cr");
-            //_jogoService.PegaInformacoesH2H(jogot);
-            //_jogoRepository.Salvar(jogot);
-            //return;
+            var jogot = _jogoRepository.TrazerJogoPorIdBet("jcRjngTL");
+            _analiseService.AnalisaUnderH2H(jogot);return;
+            _jogoService.PegaInformacoesH2H(jogot);
+            _jogoRepository.Salvar(jogot);
+            return;
 
             var containerh = _idContainerRepository.TrazerIdContainerHoje();
             var jogost = _jogoRepository.TrazJogosPorIds(containerh.Ids.Select(i => i.Id).ToArray());
@@ -657,8 +686,6 @@ namespace BetProject.Services
                 {
                     if (jogo.Ignorar && ignorar) return;
                     await _jogoService.AtualizaInformacoesBasicasJogo(jogo);
-                    //_analiseService.AnalisaOverH2H(jogo);
-                    //_analiseService.AnalisaUnderH2H(jogo);
                     _jogoRepository.Salvar(jogo);
                 }
                 catch (Exception e)
@@ -872,7 +899,7 @@ namespace BetProject.Services
 
             var idContainer = _idContainerRepository.TrazerIdContainerAmanha();
 
-            //if (idContainer != null && !ignorarHorario) return;
+            if (idContainer != null && !ignorarHorario) return;
 
             bool depoisDasSete = DateTime.Now >= new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 19, 00, 00);
 
@@ -893,22 +920,22 @@ namespace BetProject.Services
 
                 IWebDriver wd1 = SeleniumHelper.CreateDefaultWebDriver(headless);
                 ResultadoSiteService rs1 = new ResultadoSiteService(wd1);
-                IWebDriver wd2 = SeleniumHelper.CreateDefaultWebDriver(headless);
-                ResultadoSiteService rs2 = new ResultadoSiteService(wd2);
+                //IWebDriver wd2 = SeleniumHelper.CreateDefaultWebDriver(headless);
+                //ResultadoSiteService rs2 = new ResultadoSiteService(wd2);
 
                 await Task.Delay(5000);
                 Console.WriteLine($"Salvando Jogos De Amanhã as {DateTime.Now}");
-                Task.Factory.StartNew(async () =>
-                {
-                    await rs2.SalvaJogosDeAmanhaH2H(container, false, wd2);
-                });
+                //Task.Factory.StartNew(async () =>
+                //{
+                //    await rs2.SalvaJogosDeAmanhaH2H(container, false, wd2);
+                //});
 
                 await rs1.SalvaJogosDeAmanhaH2H(container, true, wd1);
-
+                AnalisaJogosH2H(container);
                 ResultadosSiteHelper.CarregandoJogos = false;
 
                 wd1.Dispose();
-                wd2.Dispose();
+                //wd2.Dispose();
             }
         }
 

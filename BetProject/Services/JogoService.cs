@@ -72,7 +72,7 @@ namespace BetProject.Services
 
             _driver.Navigate().GoToUrl($"https://www.resultados.com/jogo/{jogo.IdJogoBet}#h2h;overall");
             await Task.Delay(2000);
-            var showMores = _driver.FindElements(By.ClassName("show_more")) ;
+            var showMores = _driver.FindElements(By.ClassName("show_more"));
             showMores[0].Click();
             showMores[1].Click();
 
@@ -97,12 +97,31 @@ namespace BetProject.Services
 
             jogo.Time1.H2HInfos = h2hInfoListTime1;
             jogo.Time2.H2HInfos = h2hInfoListTime2;
-            jogo.Time1.GolsRealizadosH2H = h2hInfoListTime1.Sum(j => j.GolsTime1);
-            jogo.Time2.GolsRealizadosH2H = h2hInfoListTime2.Sum(j => j.GolsTime1);
-            jogo.Time1.GolsSofridosH2H = h2hInfoListTime1.Sum(j => j.GolsTime2);
-            jogo.Time2.GolsSofridosH2H = h2hInfoListTime2.Sum(j => j.GolsTime2);
-            jogo.Time1.PercOverUltimosJogos = (new decimal(h2hInfoListTime1.Count(j => j.TotalGols > 2)) / new decimal (h2hInfoListTime1.Count)) * new decimal(100);
-            jogo.Time2.PercOverUltimosJogos = (new decimal(h2hInfoListTime2.Count(j => j.TotalGols > 2)) / new decimal(h2hInfoListTime2.Count)) * new decimal(100);
+            jogo.Time1.GolsRealizadosH2H = jogo.Time1.H2HInfos.Sum(j => j.GolsTime1);
+            jogo.Time2.GolsRealizadosH2H = jogo.Time2.H2HInfos.Sum(j => j.GolsTime1);
+            jogo.Time1.GolsSofridosH2H = jogo.Time1.H2HInfos.Sum(j => j.GolsTime2);
+            jogo.Time2.GolsSofridosH2H = jogo.Time2.H2HInfos.Sum(j => j.GolsTime2);
+            jogo.Time1.PercOverUltimosJogos = (new decimal(jogo.Time1.H2HInfos.Count(j => j.TotalGols > 2)) / new decimal(jogo.Time1.H2HInfos.Count)) * new decimal(100);
+            jogo.Time2.PercOverUltimosJogos = (new decimal(jogo.Time2.H2HInfos.Count(j => j.TotalGols > 2)) / new decimal(jogo.Time2.H2HInfos.Count)) * new decimal(100);
+
+            jogo.Time1.QtdJogosH2H05 = jogo.Time1.H2HInfos.Count(j => j.TotalGols == 1);
+            jogo.Time1.QtdJogosH2H15 = jogo.Time1.H2HInfos.Count(j => j.TotalGols == 2);
+            jogo.Time1.QtdJogosH2H25 = jogo.Time1.H2HInfos.Count(j => j.TotalGols >= 3);
+
+            jogo.Time2.QtdJogosH2H05 = jogo.Time2.H2HInfos.Count(j => j.TotalGols == 1);
+            jogo.Time2.QtdJogosH2H15 = jogo.Time2.H2HInfos.Count(j => j.TotalGols == 2);
+            jogo.Time2.QtdJogosH2H25 = jogo.Time2.H2HInfos.Count(j => j.TotalGols >= 3);
+
+            jogo.Time1.QtdJogosUnderH2H25 = jogo.Time1.H2HInfos.Count(j => j.TotalGols <= 2);
+            jogo.Time1.QtdJogosUnderH2H35 = jogo.Time1.H2HInfos.Count(j => j.TotalGols <= 3);
+            jogo.Time1.QtdJogosH2HOver15 = jogo.Time1.H2HInfos.Count(j => j.TotalGols >= 2);
+            jogo.Time1.QtdJogosH2HOver25 = jogo.Time1.H2HInfos.Count(j => j.TotalGols >= 3);
+
+            jogo.Time2.QtdJogosUnderH2H25 = jogo.Time2.H2HInfos.Count(j => j.TotalGols <= 2);
+            jogo.Time2.QtdJogosUnderH2H35 = jogo.Time2.H2HInfos.Count(j => j.TotalGols <= 3);
+            jogo.Time2.QtdJogosH2HOver15 = jogo.Time2.H2HInfos.Count(j => j.TotalGols >= 2);
+            jogo.Time2.QtdJogosH2HOver25 = jogo.Time2.H2HInfos.Count(j => j.TotalGols >= 3);
+
         }
 
         private H2HInfo CriarH2HInfo(IWebElement tr)
@@ -198,16 +217,17 @@ namespace BetProject.Services
             if (jogo == null) return;
 
             jogo.LinkResultados = GetLinkResultadosId(jogo.IdJogoBet);
+            bool jogoAmistoso = jogo.Liga.ToLower().Contains("amistoso");
+            if (jogoAmistoso) return;
+
             await PegaInformacoesH2H(jogo);
 
             if (jogo.Time1.H2HInfos == null || jogo.Time2.H2HInfos == null || !jogo.Time1.H2HInfos.Any() || !jogo.Time2.H2HInfos.Any()) return;
 
-            //_analiseService.AnalisaOverH2H(jogo);
-            //_analiseService.AnalisaUnderH2H(jogo);
             _jogoRepository.Salvar(jogo);
         }
 
-            public async Task CriaNovoJogo(string idBet)
+        public async Task CriaNovoJogo(string idBet)
         {
             TimeServices ts = new TimeServices(_driver);
             _driver.Navigate().GoToUrl(_configuration.Sites.Resultado.ResumoJogo.Replace("ID", idBet));
