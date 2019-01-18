@@ -931,7 +931,7 @@ namespace BetProject.Services
                 //});
 
                 await rs1.SalvaJogosDeAmanhaH2H(container, true, wd1);
-                AnalisaJogosH2H(container);
+                //AnalisaJogosH2H(container);
                 ResultadosSiteHelper.CarregandoJogos = false;
 
                 wd1.Dispose();
