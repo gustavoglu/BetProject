@@ -91,11 +91,12 @@ namespace BetProject.Services
         {
             try
             {
+                while (true)
+                {
+                    var rs = new ResultadoSiteService();
+                    await rs.CarregaJogosDeAmanhaH2H(false, true, false);
+                }
 
-                var rs = new ResultadoSiteService(SeleniumHelper.CreateDefaultWebDriver());
-                //rs.AnalisaJogosH2H(_idContainerRepository.TrazerIdContainerHoje());
-                 await rs.CarregaJogosDeAmanhaH2H(false,true,true);
-                //await rs.StartAnaliseLive();
             }
             catch (Exception e)
             {

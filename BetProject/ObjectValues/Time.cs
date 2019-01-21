@@ -41,5 +41,6 @@ namespace BetProject.ObjectValues
         public int QtdJogosH2HOver25 { get; set; }
         public int QtdJogosUnderH2H25 { get; set; }
         public int QtdJogosUnderH2H35 { get; set; }
+        public int QtdJogosUnderH2H45 { get; set; }
     }
 }

@@ -64,6 +64,7 @@ namespace BetProject.Services
                                                                 $"Qtd Jogos Over 2.5: { jogo.Time1.QtdJogosH2HOver25 } / { jogo.Time2.QtdJogosH2HOver25 } | {(jogo.Time1.QtdJogosH2HOver25 + jogo.Time2.QtdJogosH2HOver25) / 2 }\n" +
                                                                 $"Qtd Jogos Under 2.5: { jogo.Time1.QtdJogosUnderH2H25 } / { jogo.Time2.QtdJogosUnderH2H25 } | {(jogo.Time1.QtdJogosUnderH2H25 + jogo.Time2.QtdJogosUnderH2H25) / 2 }\n" +
                                                                 $"Qtd Jogos Under 3.5: { jogo.Time1.QtdJogosUnderH2H35 } / { jogo.Time2.QtdJogosUnderH2H35 } | {(jogo.Time1.QtdJogosUnderH2H35 + jogo.Time2.QtdJogosUnderH2H35) / 2 }\n" +
+                                                                $"Qtd Jogos Under 4.5: { jogo.Time1.QtdJogosUnderH2H45 } / { jogo.Time2.QtdJogosUnderH2H45 } | {(jogo.Time1.QtdJogosUnderH2H45 + jogo.Time2.QtdJogosUnderH2H45) / 2 }\n" +
                                                                 $"Gols: | 10 | {jogo.Time1.GolsRealizadosH2H}:{jogo.Time1.GolsSofridosH2H} | 10 | {jogo.Time2.GolsRealizadosH2H}:{jogo.Time2.GolsSofridosH2H} \n" +
                                                                 $"Gols Inv: | 10 | {jogo.Time1.GolsRealizadosH2H}:{jogo.Time2.GolsSofridosH2H} | 10 | {jogo.Time2.GolsRealizadosH2H}:{jogo.Time1.GolsSofridosH2H}\n" +
                                                                 $"Média Gols: {(jogo.Time1.GolsRealizadosH2H + jogo.Time1.GolsRealizadosH2H) / 10} / {(jogo.Time2.GolsRealizadosH2H + jogo.Time2.GolsRealizadosH2H) / 10} | {(((jogo.Time1.GolsRealizadosH2H + jogo.Time1.GolsRealizadosH2H) / 10) + ((jogo.Time2.GolsRealizadosH2H + jogo.Time2.GolsRealizadosH2H) / 10)) / 2} \n" +
@@ -82,13 +83,21 @@ namespace BetProject.Services
             bool time2SofreMaisGols = jogo.Time2.GolsSofridosH2H >= ((new decimal(10) * new decimal(0.4)) + 10);
             bool timeUnderPerc = jogo.Time1.PercOverUltimosJogos <= 50 && jogo.Time2.PercOverUltimosJogos <= 50;
 
+            if (timeUnderPerc)
+            {
+                _telegramService.EnviaMensagemParaOGrupo(MensagemJogoH2H(jogo, "UNDER"), true);
+                return;
+            }
+
+            return;
+
             if (timeUnderPerc && !time1SofreMaisGols && !time2SofreMaisGols && !time1FazMaisGols && !time2FazMaisGols)
             {
                 _telegramService.EnviaMensagemParaOGrupo(MensagemJogoH2H(jogo, "UNDER"), true);
                 return;
             }
 
-            if (timeUnderPerc && time1SofreMaisGols && !time1FazMaisGols && !time2FazMaisGols && time2SofreMaisGols )
+            if (timeUnderPerc && time1SofreMaisGols && !time1FazMaisGols && !time2FazMaisGols && time2SofreMaisGols)
             {
                 _telegramService.EnviaMensagemParaOGrupo(MensagemJogoH2H(jogo, "UNDER"), true);
                 return;
@@ -105,7 +114,7 @@ namespace BetProject.Services
             bool time2FazMaisGols = jogo.Time2.GolsRealizadosH2H >= ((new decimal(10) * new decimal(0.4)) + 10);
             bool time1SofreMaisGols = jogo.Time1.GolsSofridosH2H >= ((new decimal(10) * new decimal(0.4)) + 10);
             bool time2SofreMaisGols = jogo.Time2.GolsSofridosH2H >= ((new decimal(10) * new decimal(0.4)) + 10);
-            var difPerc = jogo.Time1.PercOverUltimosJogos > jogo.Time2.PercOverUltimosJogos ? (jogo.Time1.PercOverUltimosJogos - jogo.Time2.PercOverUltimosJogos) : 
+            var difPerc = jogo.Time1.PercOverUltimosJogos > jogo.Time2.PercOverUltimosJogos ? (jogo.Time1.PercOverUltimosJogos - jogo.Time2.PercOverUltimosJogos) :
                                                                                               (jogo.Time2.PercOverUltimosJogos - jogo.Time1.PercOverUltimosJogos);
             bool percOverPerc = jogo.Time1.PercOverUltimosJogos >= 50 && jogo.Time2.PercOverUltimosJogos >= 50 || difPerc >= 40;
 

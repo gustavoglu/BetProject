@@ -98,7 +98,7 @@ namespace BetProject.Services
         {
             //var expandLeagueLink = _driver.FindElements(By.ClassName("expand-league-link")).ToList();
             //var expandLeagueLink = _driver.FindElements(By.ClassName("collapse-league")).ToList();
-           
+
             //if (!expandLeagueLink.Any()) return;
             //expandLeagueLink.ForEach(e => e.Click());
 
@@ -460,7 +460,7 @@ namespace BetProject.Services
 
             try
             {
-                foreach (var i in ids) await CriarOuAtualizaInfosJogo(i.Id,container.Id, true);
+                foreach (var i in ids) await CriarOuAtualizaInfosJogo(i.Id, container.Id, true);
             }
             catch (Exception e)
             {
@@ -493,19 +493,37 @@ namespace BetProject.Services
         }
 
 
-        public async Task SalvaJogosDeAmanhaH2H(IdContainer container, bool descending = false, IWebDriver driver = null)
+        public async Task SalvaJogosDeAmanhaH2H(IdContainer container, bool descending = false, IWebDriver driver = null, TimeSpan? acimaDe = null)
         {
             if (driver != null) _driver = driver;
             Console.WriteLine($"Salvando Jogos De Amanhã as {DateTime.Now}");
 
             ResultadosSiteHelper.CarregandoJogos = true;
 
-            var ids = descending ? container.Ids.OrderByDescending(id => id.DataInicio.TimeOfDay) :
-                                   container.Ids.OrderBy(id => id.DataInicio.TimeOfDay);
+            var ids = descending ? container.Ids.OrderByDescending(id => id.DataInicio.TimeOfDay).ToList() :
+                                   container.Ids.OrderBy(id => id.DataInicio.TimeOfDay).ToList();
+
+            if (acimaDe != null) ids = ids.Where(i => i.DataInicio.TimeOfDay >= acimaDe.Value).ToList();
 
             try
             {
-                foreach (var i in ids) await CriarOuAtualizaInfosJogoH2H(i.Id, container.Id, true);
+                Task.Factory.StartNew(async () =>
+                {
+                    IWebDriver wd2 = SeleniumHelper.CreateDefaultWebDriver(true);
+                    ResultadoSiteService rs2 = new ResultadoSiteService(wd2);
+
+                    for (int i = 0; i < ids.Count; i++)
+                    {
+                        if (i % 2 == 0) await rs2.CriarOuAtualizaInfosJogoH2H(ids[i].Id, container.Id, true);
+                    }
+
+                    wd2.Dispose();
+                });
+
+                for (int i = 0; i < ids.Count; i++)
+                {
+                    if (i % 2 != 0) await CriarOuAtualizaInfosJogoH2H(ids[i].Id, container.Id, true);
+                }
             }
             catch (Exception e)
             {
@@ -582,7 +600,7 @@ namespace BetProject.Services
         {
 
             var jogot = _jogoRepository.TrazerJogoPorIdBet("jcRjngTL");
-            _analiseService.AnalisaUnderH2H(jogot);return;
+            _analiseService.AnalisaUnderH2H(jogot); return;
             _jogoService.PegaInformacoesH2H(jogot);
             _jogoRepository.Salvar(jogot);
             return;
@@ -710,7 +728,7 @@ namespace BetProject.Services
                 }
         }
 
-        public async Task CriarOuAtualizaInfosJogo(string id, string idContainerId ,bool amanha = false, bool ignorar = true)
+        public async Task CriarOuAtualizaInfosJogo(string id, string idContainerId, bool amanha = false, bool ignorar = true)
         {
             Console.WriteLine($"Criando ou Atualizando ID: {id} as {DateTime.Now}");
             var idContainer = _idContainerRepository.TrazerPorId(idContainerId);
@@ -920,22 +938,15 @@ namespace BetProject.Services
 
                 IWebDriver wd1 = SeleniumHelper.CreateDefaultWebDriver(headless);
                 ResultadoSiteService rs1 = new ResultadoSiteService(wd1);
-                //IWebDriver wd2 = SeleniumHelper.CreateDefaultWebDriver(headless);
-                //ResultadoSiteService rs2 = new ResultadoSiteService(wd2);
+       
 
                 await Task.Delay(5000);
                 Console.WriteLine($"Salvando Jogos De Amanhã as {DateTime.Now}");
-                //Task.Factory.StartNew(async () =>
-                //{
-                //    await rs2.SalvaJogosDeAmanhaH2H(container, false, wd2);
-                //});
 
-                await rs1.SalvaJogosDeAmanhaH2H(container, true, wd1);
-                //AnalisaJogosH2H(container);
+                await rs1.SalvaJogosDeAmanhaH2H(container, false, wd1);
                 ResultadosSiteHelper.CarregandoJogos = false;
 
                 wd1.Dispose();
-                //wd2.Dispose();
             }
         }
 
@@ -955,7 +966,7 @@ namespace BetProject.Services
 
             if (depoisDasSete || ignorarHorario)
             {
-                var data =  DateTime.Now.Date.AddDays(1).Date;
+                var data = DateTime.Now.Date.AddDays(1).Date;
                 _telegramService.EnviaMensagemParaOGrupo($"Carregando Jogos de Amanhã {data}");
 
                 var container = _idContainerRepository.TrazerIdContainerAmanha();
@@ -1105,7 +1116,7 @@ namespace BetProject.Services
                         }
                     }
 
-                    if(this._driver == null) this._driver = SeleniumHelper.CreateDefaultWebDriver(true);
+                    if (this._driver == null) this._driver = SeleniumHelper.CreateDefaultWebDriver(true);
                     _jogoService = new JogoService(_driver);
                     foreach (var i in jogos)
                     {

@@ -114,11 +114,13 @@ namespace BetProject.Services
 
             jogo.Time1.QtdJogosUnderH2H25 = jogo.Time1.H2HInfos.Count(j => j.TotalGols <= 2);
             jogo.Time1.QtdJogosUnderH2H35 = jogo.Time1.H2HInfos.Count(j => j.TotalGols <= 3);
+            jogo.Time1.QtdJogosUnderH2H45 = jogo.Time1.H2HInfos.Count(j => j.TotalGols <= 4);
             jogo.Time1.QtdJogosH2HOver15 = jogo.Time1.H2HInfos.Count(j => j.TotalGols >= 2);
             jogo.Time1.QtdJogosH2HOver25 = jogo.Time1.H2HInfos.Count(j => j.TotalGols >= 3);
 
             jogo.Time2.QtdJogosUnderH2H25 = jogo.Time2.H2HInfos.Count(j => j.TotalGols <= 2);
             jogo.Time2.QtdJogosUnderH2H35 = jogo.Time2.H2HInfos.Count(j => j.TotalGols <= 3);
+            jogo.Time2.QtdJogosUnderH2H45 = jogo.Time1.H2HInfos.Count(j => j.TotalGols <= 4);
             jogo.Time2.QtdJogosH2HOver15 = jogo.Time2.H2HInfos.Count(j => j.TotalGols >= 2);
             jogo.Time2.QtdJogosH2HOver25 = jogo.Time2.H2HInfos.Count(j => j.TotalGols >= 3);
 
@@ -205,11 +207,11 @@ namespace BetProject.Services
             _driver.Navigate().GoToUrl(_configuration.Sites.Resultado.ResumoJogo.Replace("ID", idBet));
             await Task.Delay(2000);
 
-            //if (!JogoClassificacao() || JogoSemJogosParaAnalise(idBet))
-            //{
-            //    _idContainerRepository.IgnoraIdJogo(idBet);
-            //    return;
-            //}
+            if (!JogoClassificacao() || JogoSemJogosParaAnalise(idBet))
+            {
+                _idContainerRepository.IgnoraIdJogo(idBet);
+                return;
+            }
 
             List<Time> times = ts.CriaTimes(idBet);
             if (times == null) return;
