@@ -95,6 +95,7 @@ namespace BetProject.Services
                 {
                     var rs = new ResultadoSiteService();
                     await rs.CarregaJogosDeAmanhaH2H(false, true, false);
+                    GC.Collect();
                 }
 
             }
