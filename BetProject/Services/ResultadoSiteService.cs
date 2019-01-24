@@ -919,7 +919,7 @@ namespace BetProject.Services
 
             if (idContainer != null && !ignorarHorario) return;
 
-            bool depoisDasSete = DateTime.Now >= new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 19, 00, 00);
+            bool depoisDasSete = DateTime.Now >= new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, 13, 00, 00);
 
             if (depoisDasSete || ignorarHorario)
             {
